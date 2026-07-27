@@ -1,8 +1,10 @@
 # LLM Twin
 
-An end-to-end LLM system that learns your writing style from your own content (articles, posts, code) and generates new content in that voice — built as a production-style RAG + fine-tuning pipeline, not a notebook demo.
+An end-to-end LLM system that learns a person's writing style from their own content (articles, posts, code) and generates new content in that voice — a production-style RAG + fine-tuning pipeline, not a notebook demo.
 
-Built by [Ahmed Elsayed](https://github.com/ahmed-elsayed1611) · [LinkedIn](https://linkedin.com/in/ahmed-elsayed16112002)
+> **A note on origin**: this project's architecture and implementation are based on *LLM Engineer's Handbook* (Iusztin & Labonne). I didn't design this system from scratch — I studied it in depth, line by line, rebuilt it, and understood the reasoning behind every design decision, before extending it with my own contributions (see below). I'm sharing it as proof of that understanding, not as original design work.
+
+Studied and built by [Ahmed Elsayed](https://github.com/ahmed-elsayed1611) · [LinkedIn](https://linkedin.com/in/ahmed-elsayed16112002)
 
 ## Architecture
 
@@ -58,10 +60,16 @@ Serves the fine-tuned model behind an API, using RAG at query time — embedding
 
 Actively in development. Current focus: RAG feature pipeline and retrieval/generation.
 
-### Planned contributions
+### My planned contributions
 - WhatsApp data crawler, extending the existing crawler dispatcher to a new source
 - Streamlit UI for interacting with the twin
 - RAG evaluation metrics
+
+## Why this repo matters
+
+I came into this project self-taught, currently working as a Technical Support Representative at AT&T, transitioning into AI/ML engineering. Rather than stopping at tutorials, I chose a genuinely production-grade codebase and went through it the way an engineer maintaining it would have to: understanding every design pattern (Factory, Strategy, Singleton, Template Method, Builder), every type-safety decision (Python generics across a 9-class domain hierarchy), and every architectural trade-off (batch vs. streaming, why a feature store exists, why cleaning/chunking/embedding are separated into their own layers) — not just running cells top to bottom.
+
+That's the skill I'd bring to a team: the ability to drop into an unfamiliar, non-trivial codebase, actually understand it at the architecture level, and extend it correctly — which is most of what real ML engineering work looks like day to day, far more than greenfield model-building.
 
 ## Credits
 
