@@ -1,0 +1,47 @@
+# --- Private data: never commit ---
+# The training data is a real private WhatsApp conversation.
+data/raw/
+outputs/
+*.jsonl
+all_samples.json
+audit_report.json
+private_names.txt
+whatsapp_chat*.txt
+eval_runs/
+runs/
+eval_table.csv
+eval_summary.json
+eval_config.json
+run_summary.json
+
+# --- Secrets ---
+.env
+*.token
+*credentials*
+
+# --- Model artifacts (large, stored on Drive) ---
+checkpoints*/
+*_merged/
+model_merged*/
+adapter/
+*.safetensors
+*.bin
+*.gguf
+
+# --- Local-only archive ---
+.archive/
+*.zip
+
+# --- Python / notebook hygiene ---
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# --- OS / editor ---
+.DS_Store
+.vscode/
+.idea/
+*Zone.Identifier

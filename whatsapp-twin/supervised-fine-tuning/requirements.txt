@@ -1,0 +1,8 @@
+# Installed inside Colab by the notebook itself; listed here for reference.
+unsloth
+trl
+peft
+accelerate
+bitsandbytes
+datasets
+huggingface_hub

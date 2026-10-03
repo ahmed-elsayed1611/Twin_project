@@ -1,0 +1,6 @@
+# scripts/build_hard_negative_dpo_dataset.py (local, CPU):
+transformers
+huggingface_hub
+sentence-transformers
+
+# notebooks/dpo_training.ipynb installs its own stack inside Colab (unsloth, trl, datasets).

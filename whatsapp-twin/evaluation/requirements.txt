@@ -1,0 +1,6 @@
+# Installed inside Colab by the notebook itself; listed here for reference.
+unsloth
+openai
+pandas
+numpy
+safetensors

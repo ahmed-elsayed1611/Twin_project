@@ -175,3 +175,9 @@ run_ids.txt
 # Virtual environments
 *_venv
 *_myenv
+
+# Private WhatsApp data (more rules in whatsapp-twin/.gitignore)
+whatsapp_chat*.txt
+whatsapp_full_dataset.json
+data/whatsapp/
+private_names.txt

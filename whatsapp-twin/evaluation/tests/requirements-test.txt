@@ -1,0 +1,9 @@
+torch
+transformers
+peft
+datasets
+pandas
+numpy
+openai
+safetensors
+tqdm

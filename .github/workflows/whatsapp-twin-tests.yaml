@@ -1,0 +1,30 @@
+name: WhatsApp Twin tests
+
+on:
+  push:
+    paths:
+      - "whatsapp-twin/**"
+      - ".github/workflows/whatsapp-twin-tests.yaml"
+  pull_request:
+    paths:
+      - "whatsapp-twin/**"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Data preparation (standard library only)
+        run: python -m unittest discover -s whatsapp-twin/data-preparation/tests -v
+
+      - name: Notebooks run top to bottom
+        run: python whatsapp-twin/tools/check_notebook_order.py whatsapp-twin/*/notebooks/*.ipynb
+
+      - name: ZenML ingestion prototype (extractor)
+        run: |
+          pip install pydantic pytest
+          cd whatsapp-twin/zenml-ingestion-prototype && python -m pytest llm_engineering/tests

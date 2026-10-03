@@ -1,0 +1,10 @@
+# WhatsApp ingestion configuration (extension to the LLM Engineer's Handbook pipelines).
+#
+# PRIVACY: this dataset is personal communication. The pipeline deliberately has no
+# "push to Hugging Face" step; the output stays in the local ZenML artifact store.
+
+parameters:
+  export_path: "data/whatsapp/whatsapp_chat.txt"
+  self_sender: "Ahmed"
+  anonymize: true
+  min_length: 5
