@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 from uuid import UUID
 
+from llm_engineering.application.networks import EmbeddingModelSingleton
 from llm_engineering.domain.chunks import ArticleChunk, Chunk, PostChunk, RepositoryChunk
 from llm_engineering.domain.cleaned_documents import (
     CleanedArticleDocument,
@@ -11,10 +12,12 @@ from llm_engineering.domain.cleaned_documents import (
     CleanedRepositoryDocument,
 )
 
-from .operations import chunk_article, chunk_text
+from .operations import chunk_article, chunk_text, count_tokens
 
 CleanedDocumentT = TypeVar("CleanedDocumentT", bound=CleanedDocument)
 ChunkT = TypeVar("ChunkT", bound=Chunk)
+
+embedding_model = EmbeddingModelSingleton()
 
 
 class ChunkingDataHandler(ABC, Generic[CleanedDocumentT, ChunkT]):
@@ -71,9 +74,14 @@ class PostChunkingHandler(ChunkingDataHandler):
 class ArticleChunkingHandler(ChunkingDataHandler):
     @property
     def metadata(self) -> dict:
+        # Measured in tokens, so a chunk always fits in the embedding model.
+        # Two tokens are left for the start and end tokens the model adds.
+        max_tokens = embedding_model.max_input_length - 2
+
         return {
-            "min_length": 1000,
-            "max_length": 2000,
+            "min_length": max_tokens // 2,
+            "max_length": max_tokens,
+            "length_unit": "tokens",
         }
 
     def chunk(self, data_model: CleanedArticleDocument) -> list[ArticleChunk]:
@@ -81,7 +89,10 @@ class ArticleChunkingHandler(ChunkingDataHandler):
 
         cleaned_content = data_model.content
         chunks = chunk_article(
-            cleaned_content, min_length=self.metadata["min_length"], max_length=self.metadata["max_length"]
+            cleaned_content,
+            min_length=self.metadata["min_length"],
+            max_length=self.metadata["max_length"],
+            length_function=count_tokens,
         )
 
         for chunk in chunks:
