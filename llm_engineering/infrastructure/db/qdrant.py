@@ -15,6 +15,7 @@ class QdrantDatabaseConnector:
                     cls._instance = QdrantClient(
                         url=settings.QDRANT_CLOUD_URL,
                         api_key=settings.QDRANT_APIKEY,
+                        timeout=settings.QDRANT_TIMEOUT,
                     )
 
                     uri = settings.QDRANT_CLOUD_URL
@@ -22,6 +23,7 @@ class QdrantDatabaseConnector:
                     cls._instance = QdrantClient(
                         host=settings.QDRANT_DATABASE_HOST,
                         port=settings.QDRANT_DATABASE_PORT,
+                        timeout=settings.QDRANT_TIMEOUT,
                     )
 
                     uri = f"{settings.QDRANT_DATABASE_HOST}:{settings.QDRANT_DATABASE_PORT}"

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     QDRANT_DATABASE_PORT: int = 6333
     QDRANT_CLOUD_URL: str = "str"
     QDRANT_APIKEY: str | None = None
+    # Seconds per request. Without it the client waits only 5 seconds; creating a collection took 75 seconds
+    # on a busy disk (Docker Desktop on Windows).
+    QDRANT_TIMEOUT: int = 120
 
     # AWS Authentication
     AWS_REGION: str = "eu-central-1"
