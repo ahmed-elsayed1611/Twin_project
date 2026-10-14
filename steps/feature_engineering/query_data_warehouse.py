@@ -51,7 +51,7 @@ def fetch_all_data(user: UserDocument) -> dict[str, list[NoSQLBaseDocument]]:
             except Exception:
                 logger.exception(f"'{query_name}' request failed.")
 
-                results[query_name] = []
+                raise
 
     return results
 
