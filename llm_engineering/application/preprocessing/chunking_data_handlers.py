@@ -52,7 +52,7 @@ class PostChunkingHandler(ChunkingDataHandler):
         )
 
         for chunk in chunks:
-            chunk_id = hashlib.md5(chunk.encode()).hexdigest()
+            chunk_id = hashlib.md5(f"{data_model.id}:{chunk}".encode()).hexdigest()
             model = PostChunk(
                 id=UUID(chunk_id, version=4),
                 content=chunk,
@@ -85,7 +85,7 @@ class ArticleChunkingHandler(ChunkingDataHandler):
         )
 
         for chunk in chunks:
-            chunk_id = hashlib.md5(chunk.encode()).hexdigest()
+            chunk_id = hashlib.md5(f"{data_model.id}:{chunk}".encode()).hexdigest()
             model = ArticleChunk(
                 id=UUID(chunk_id, version=4),
                 content=chunk,
@@ -118,7 +118,7 @@ class RepositoryChunkingHandler(ChunkingDataHandler):
         )
 
         for chunk in chunks:
-            chunk_id = hashlib.md5(chunk.encode()).hexdigest()
+            chunk_id = hashlib.md5(f"{data_model.id}:{chunk}".encode()).hexdigest()
             model = RepositoryChunk(
                 id=UUID(chunk_id, version=4),
                 content=chunk,
