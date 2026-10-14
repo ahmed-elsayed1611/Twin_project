@@ -15,8 +15,13 @@ from .base import BaseSeleniumCrawler
 
 class LinkedInCrawler(BaseSeleniumCrawler):
     model = PostDocument
+    domain = "https://linkedin.com"
 
     def __init__(self, scroll_limit: int = 5, is_deprecated: bool = True) -> None:
+        # Fail before starting Chrome: LinkedIn blocks this login, so the crawler cannot work.
+        if is_deprecated:
+            raise DeprecationWarning("The LinkedIn crawler is switched off: LinkedIn no longer allows this login.")
+
         super().__init__(scroll_limit)
 
         self._is_deprecated = is_deprecated

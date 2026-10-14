@@ -11,7 +11,7 @@ from llm_engineering.domain.documents import UserDocument
 
 @step
 def crawl_links(user: UserDocument, links: list[str]) -> Annotated[list[str], "crawled_links"]:
-    dispatcher = CrawlerDispatcher.build().register_linkedin().register_medium().register_github()
+    dispatcher = CrawlerDispatcher.build_default()
 
     logger.info(f"Starting to crawl {len(links)} link(s).")
 
@@ -38,10 +38,12 @@ def crawl_links(user: UserDocument, links: list[str]) -> Annotated[list[str], "c
 
 
 def _crawl_link(dispatcher: CrawlerDispatcher, link: str, user: UserDocument) -> tuple[bool, str]:
-    crawler = dispatcher.get_crawler(link)
     crawler_domain = urlparse(link).netloc
 
     try:
+        # Inside the try: creating a crawler can fail too (Chrome not starting, LinkedIn switched off),
+        # and that should count as one failed link, not stop the whole step.
+        crawler = dispatcher.get_crawler(link)
         crawler.extract(link=link, user=user)
 
         return (True, crawler_domain)
