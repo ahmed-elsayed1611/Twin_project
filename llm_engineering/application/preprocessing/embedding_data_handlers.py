@@ -32,7 +32,7 @@ class EmbeddingDataHandler(ABC, Generic[ChunkT, EmbeddedChunkT]):
 
         embedded_chunk = [
             self.map_model(data_model, cast(list[float], embedding))
-            for data_model, embedding in zip(data_model, embeddings, strict=False)
+            for data_model, embedding in zip(data_model, embeddings, strict=True)
         ]
 
         return embedded_chunk

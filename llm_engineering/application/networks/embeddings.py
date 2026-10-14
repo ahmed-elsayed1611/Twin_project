@@ -100,7 +100,7 @@ class EmbeddingModelSingleton(metaclass=SingletonMeta):
         except Exception:
             logger.error(f"Error generating embeddings for {self._model_id=} and {input_text=}")
 
-            return [] if to_list else np.array([])
+            raise
 
         if to_list:
             embeddings = embeddings.tolist()
