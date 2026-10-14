@@ -14,9 +14,20 @@ from llm_engineering.domain.documents import (
     RepositoryDocument,
 )
 
-from .operations import clean_text
+from .operations import PARAGRAPH_SEPARATOR, clean_code, clean_text
 
 DocumentT = TypeVar("DocumentT", bound=Document)
+
+# Only these fields hold the article's text; others, such as "language", are metadata.
+ARTICLE_TEXT_FIELDS = ("Title", "Subtitle", "Content")
+
+
+def _clean_and_join(parts: list[str | None]) -> str:
+    """Clean each part on its own and join them with a paragraph break, which survives cleaning."""
+
+    cleaned_parts = [clean_text(part) for part in parts if part]
+
+    return PARAGRAPH_SEPARATOR.join(part for part in cleaned_parts if part)
 CleanedDocumentT = TypeVar("CleanedDocumentT", bound=CleanedDocument)
 
 
@@ -35,7 +46,7 @@ class PostCleaningHandler(CleaningDataHandler):
     def clean(self, data_model: PostDocument) -> CleanedPostDocument:
         return CleanedPostDocument(
             id=data_model.id,
-            content=clean_text(" #### ".join(data_model.content.values())),
+            content=_clean_and_join(list(data_model.content.values())),
             platform=data_model.platform,
             author_id=data_model.author_id,
             author_full_name=data_model.author_full_name,
@@ -45,11 +56,11 @@ class PostCleaningHandler(CleaningDataHandler):
 
 class ArticleCleaningHandler(CleaningDataHandler):
     def clean(self, data_model: ArticleDocument) -> CleanedArticleDocument:
-        valid_content = [content for content in data_model.content.values() if content]
+        text_fields = [data_model.content.get(field) for field in ARTICLE_TEXT_FIELDS]
 
         return CleanedArticleDocument(
             id=data_model.id,
-            content=clean_text(" #### ".join(valid_content)),
+            content=_clean_and_join(text_fields),
             platform=data_model.platform,
             link=data_model.link,
             author_id=data_model.author_id,
@@ -61,7 +72,10 @@ class RepositoryCleaningHandler(CleaningDataHandler):
     def clean(self, data_model: RepositoryDocument) -> CleanedRepositoryDocument:
         return CleanedRepositoryDocument(
             id=data_model.id,
-            content=clean_text(" #### ".join(data_model.content.values())),
+            # Code keeps its syntax, and each file starts with its path so the chunks say where they come from.
+            content=PARAGRAPH_SEPARATOR.join(
+                f"File: {path}\n{clean_code(code)}" for path, code in data_model.content.items() if code
+            ),
             platform=data_model.platform,
             name=data_model.name,
             link=data_model.link,
