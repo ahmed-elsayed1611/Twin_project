@@ -42,11 +42,22 @@ def chunk_article(text: str, min_length: int, max_length: int) -> list[str]:
         if len(current_chunk) + len(sentence) <= max_length:
             current_chunk += sentence + " "
         else:
-            if len(current_chunk) >= min_length:
-                extracts.append(current_chunk.strip())
+            _add_extract(extracts, current_chunk, min_length)
             current_chunk = sentence + " "
 
-    if len(current_chunk) >= min_length:
-        extracts.append(current_chunk.strip())
+    _add_extract(extracts, current_chunk, min_length)
 
     return extracts
+
+
+def _add_extract(extracts: list[str], chunk: str, min_length: int) -> None:
+    """Keep every piece of text: a piece under min_length joins the previous chunk, or stands alone if it is the first."""
+
+    chunk = chunk.strip()
+    if not chunk:
+        return
+
+    if len(chunk) < min_length and extracts:
+        extracts[-1] = f"{extracts[-1]} {chunk}"
+    else:
+        extracts.append(chunk)
