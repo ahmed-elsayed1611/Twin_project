@@ -20,13 +20,19 @@ def crawl_links(user: UserDocument, links: list[str]) -> Annotated[list[str], "c
     for link in tqdm(links):
         successfull_crawl, crawled_domain = _crawl_link(dispatcher, link, user)
         successfull_crawls += successfull_crawl
-
+ 
         metadata = _add_to_metadata(metadata, crawled_domain, successfull_crawl)
 
     step_context = get_step_context()
     step_context.add_output_metadata(output_name="crawled_links", metadata=metadata)
 
     logger.info(f"Successfully crawled {successfull_crawls} / {len(links)} links.")
+
+    success_rate = successfull_crawls / len(links) if links else 1.0
+    if success_rate < 0.8:
+        raise RuntimeError(
+            f"Only {successfull_crawls}/{len(links)} links crawled ({success_rate:.0%}); expected at least 80%."
+        )
 
     return links
 
