@@ -110,7 +110,7 @@ This project is still in progress.
 
 | Stage | Status |
 |---|---|
-| Architecture, tooling, data collection, RAG feature pipeline | Studied and run as written in the book |
+| Architecture, tooling, data collection, RAG feature pipeline | Studied, run, and fixed (see below) |
 | Data preparation | Done — my own implementation |
 | Supervised fine-tuning | Done — my own implementation |
 | Preference alignment | Done — my own implementation |
@@ -122,6 +122,34 @@ This project is still in progress.
 ### Planned contributions
 - Streamlit UI for interacting with the twin
 - RAG evaluation metrics
+
+## What I changed in the book's code (data collection and RAG feature pipeline)
+
+I ran the pipelines, checked the data in MongoDB and Qdrant, and fixed what I found. Each fix has a unit test in `tests/unit/`. Data: 76 articles by the two authors.
+
+**The pipeline reported success when it had failed**
+- A crawl with most links failing now fails the step (under 80% success). A crawler that cannot even start counts as one failed link.
+- An error page ("Page not found") is rejected instead of saved as an article. All 45 of one author's newsletter links had become error pages and were stored as articles.
+- A failed MongoDB query, Qdrant insert or embedding call now stops the run. Before, each one was logged and turned into empty data, and the run ended green. With Qdrant stopped, the old pipeline reported success with nothing saved.
+- A misspelled author name stops the run instead of creating a new empty user.
+
+**Data was lost without any message**
+- Chunk ids were the hash of the text alone. Four articles share the same intro paragraph, so their chunks overwrote each other: 500 chunks sent, 497 stored. Ids now include the document id: 500 of 500 stored.
+- Article chunks were up to 2,000 characters, but the embedding model (`all-MiniLM-L6-v2`) reads only 256 tokens and silently cuts the rest: 97% of chunks were too long and 41% of the text was never embedded. Chunks are now measured in the model's tokens: 0% over the limit.
+- Text under 1,000 characters at the end of an article was dropped (39 of 76 articles lost text). Now every word is kept.
+
+**Cleaning**
+- Links become `[URL]` instead of noise like `https example.com`, and paragraph breaks are kept. This also makes the post and repository splitters' `chunk_size` work: before, it had no effect because there were no breaks left to split on.
+- Only the title, subtitle and body are used: a stray `en` (the language field) was glued to the end of 71 of 76 articles.
+- Code from GitHub keeps its spaces and syntax (`import os` was stored as `importos`), and each file starts with its path.
+
+**Smaller fixes**
+- A unique index on `link` in MongoDB (`python -m tools.create_indexes`), so the database refuses a second copy of a page.
+- The step's metadata counter no longer writes an extra `authors` field into one real chunk.
+- A configurable Qdrant timeout (`QDRANT_TIMEOUT`). The default was 5 seconds, and creating a collection took up to 75 seconds on a busy disk.
+- Crawlers declare their own domain and are registered automatically. The switched-off LinkedIn crawler fails before starting Chrome.
+- The active settings are printed at start-up, because a value in `.env` silently overrides the code's default.
+- On a local ZenML server, set `export ZENML_STORE_HTTP_TIMEOUT=300`: the server resets its timeout to 30 seconds on every start, which long steps exceed.
 
 ## Credits
 
