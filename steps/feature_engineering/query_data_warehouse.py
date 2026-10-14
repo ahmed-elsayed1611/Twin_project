@@ -20,11 +20,15 @@ def query_data_warehouse(
 
         first_name, last_name = utils.split_user_full_name(author_full_name)
         logger.info(f"First name: {first_name}, Last name: {last_name}")
-        user = UserDocument.get_or_create(first_name=first_name, last_name=last_name)
+        user = UserDocument.find(first_name=first_name, last_name=last_name)
+        if user is None:
+            raise ValueError(f"User '{author_full_name}' was not found in the data warehouse. Check the name in the config.")
         authors.append(user)
 
         results = fetch_all_data(user)
         user_documents = [doc for query_result in results.values() for doc in query_result]
+        if not user_documents:
+            logger.warning(f"User '{author_full_name}' has no documents in the data warehouse.")
 
         documents.extend(user_documents)
 
