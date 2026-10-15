@@ -1,3 +1,5 @@
+import re
+
 import opik
 from langchain_openai import ChatOpenAI
 from loguru import logger
@@ -23,10 +25,15 @@ class QueryExpansion(RAGStep):
 
         chain = prompt | model
 
-        response = chain.invoke({"question": query})
-        result = response.content
+        response = chain.invoke({"question": query.content})
+        result = response.content.strip()
 
-        queries_content = result.strip().split(query_expansion_template.separator)
+        separator = query_expansion_template.separator
+        if separator in result:
+            queries_content = result.split(separator)
+        else:
+            # The model sometimes ignores the separator and writes one question per line, often numbered.
+            queries_content = [re.sub(r"^\s*(\d+[.)]|[-*])\s*", "", line) for line in result.splitlines()]
 
         queries = [query]
         queries += [
@@ -35,7 +42,10 @@ class QueryExpansion(RAGStep):
             if (stripped_content := content.strip())
         ]
 
-        return queries
+        if len(queries) > expand_to_n:
+            logger.warning(f"The model returned {len(queries) - 1} rewrites; keeping {expand_to_n - 1}.")
+
+        return queries[:expand_to_n]
 
 
 if __name__ == "__main__":
