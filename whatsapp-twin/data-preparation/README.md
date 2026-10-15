@@ -120,7 +120,7 @@ python3 src/twin_dataset_builder.py \
   --redact-term 'A private address'
 ```
 
-Measured on the real export (15 Oct): without the names file, 24.1% of training samples contained a private name, 6.1% in the reply the model learns to write. With it, 0, confirmed by `tools/check_private_names.py`.
+Measured on the real export (15 Oct): without the names file, 24.1% of training samples contained a private name (6.1% inside Ahmed's reply; the v1 SFT run trained on every token, so on all of them). With it, 0, confirmed by `tools/check_private_names.py`. Retrain with [`sft_nilechat_v2.ipynb`](../supervised-fine-tuning), which refuses data built without the names file.
 
 Keep the raw export and the `outputs/` directory private. Do not commit them to GitHub.
 

@@ -15,6 +15,47 @@ Follows the supervised fine-tuning chapter of the [*LLM Engineer's Handbook*](ht
 
 Both runs overfit (validation loss reverses) around steps 1550–1650, well short of the planned 2 epochs / 3116 steps. Training was stopped at **checkpoint-1000**, and that checkpoint was merged into the standalone model used by the DPO and evaluation stages.
 
+## What a later review found in the v1 run
+
+Found on 15 Oct, by reading the notebook and auditing the data. They do not invalidate the results above, but they change what those numbers mean.
+
+| Finding | Effect |
+|---|---|
+| **The loss counted every token.** `SFTTrainer` received the whole chat-template string (`dataset_text_field="text"`) with no response-only masking | The model was also trained to write the system message and Contact's messages. The 1.625 validation loss mixes "predict Ahmed" with "predict Contact" and the system message, which is identical in every sample and therefore easy to predict |
+| **Real names were in the training data.** The data was built without name redaction: 24.1% of training samples contained a private name | Because of the first finding, the model learned to *write* the names in all of them, not only in Ahmed's replies (6.1%). The evaluation measured the result: a private name in 23 of 150 SFT replies, against 10 in Ahmed's real replies |
+| **Overfitting started at the second pass over the data.** 24,915 samples ÷ 16 per step ≈ 1,558 steps per epoch, the same place validation loss turned up | Memorising the training set is also how exact private text can come back out. Stopping at checkpoint-1000 helped, but by hand |
+| **Over-long samples were never checked.** Truncation at 2,048 tokens cuts the end of a sample, which is the reply | Not measured for v1; v2 counts and drops them |
+
+## Version 2: `notebooks/sft_nilechat_v2.ipynb`
+
+v1 is kept unchanged: it produced the model that DPO and the evaluation use today. v2 is the retraining notebook.
+
+| v1 | v2 |
+|---|---|
+| Data with names | Only the redacted build. Refuses data whose `audit_report.json` shows no names file, and scans for names again (counts only, never prints a name) |
+| Loss on every token | **Loss on the final reply only.** Labels are built by hand: `-100` on everything before Ahmed's final reply, so each reply is a target exactly once. Checked on a made-up chat and on every real sample |
+| `SFTTrainer` | `transformers.Trainer` with the hand-built labels (an `SFTTrainer` would rebuild labels from the text) |
+| Packing on | Packing off: packing would let one sample attend to another and mix their labels |
+| Stopped by hand | Early stopping (4 evaluations without improvement) and `load_best_model_at_end` |
+| `save_total_limit=2` could delete the best checkpoint | The best checkpoint is always kept, and saved again as `best_adapter` |
+| Truncation not checked | Over-long samples dropped and counted; more than 1% dropped stops the notebook |
+| No resume | Resumes from the last checkpoint, only if config and data fingerprints match `run_config.json` |
+| Writes `model_merged_nilechat` | Writes `model_merged_nilechat_v2`; refuses to overwrite it unless asked |
+| — | `run_summary.json`: config, data SHA-256, eval curve, dropped samples, library versions |
+
+**Its validation loss is not comparable with v1's 1.625:** it averages over Ahmed's final replies only. Compare v1 and v2 with the evaluation notebook (likelihood of the real reply, judge, private-name rate).
+
+**Running it:** build the data with `PRIVATE_NAMES_FILE` (see [data preparation](../data-preparation)), upload `train.jsonl`, `validation.jsonl` and `audit_report.json` to `MyDrive/ahmed_twin/redacted/`, then run top to bottom. After a disconnect, run top to bottom again. In a fresh session after training: Sections 1, 2, 3, then 9 and 10.
+
+**Tests (CPU, no GPU or private data):** `tests/test_sft_v2.py` runs the notebook's real cells with a tiny random Qwen2 model, a real LoRA adapter, a real byte-level tokenizer with NileChat's chat template and the real `Trainer`, on synthetic chats. It covers a full run, re-running a finished run, a changed config, a simulated Colab disconnect and resume, and data that must be refused (a private name, no names file, an audit without name redaction).
+
+```bash
+pip install -r supervised-fine-tuning/tests/requirements-test.txt
+python supervised-fine-tuning/tests/test_sft_v2.py
+```
+
+Not tested on CPU: Unsloth itself and the GPU. The first Colab run is the real test for those.
+
 ## Configuration
 
 | Setting | Value |
@@ -26,7 +67,7 @@ Both runs overfit (validation loss reverses) around steps 1550–1650, well shor
 | Evaluation | every 50 steps on `validation.jsonl` |
 | Precision | fp16 on T4 (bf16 where supported) |
 
-## Notebook: `notebooks/sft_nilechat.ipynb`
+## Notebook v1: `notebooks/sft_nilechat.ipynb` (produced the current model)
 
 1. **Setup:** Drive, GPU check, dependencies, Hugging Face login (`getpass`, never stored)
 2. **Load base model and tokenizer**
