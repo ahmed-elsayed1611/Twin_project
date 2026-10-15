@@ -17,6 +17,9 @@ from llm_engineering.infrastructure.db.qdrant import connection
 
 T = TypeVar("T", bound="VectorBaseDocument")
 
+# Collections already reported as missing, so the warning is logged once and not on every search.
+_missing_collections_warned: set[str] = set()
+
 
 class VectorBaseDocument(BaseModel, Generic[T], ABC):
     id: UUID4 = Field(default_factory=uuid.uuid4)
@@ -138,8 +141,16 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
     def search(cls: Type[T], query_vector: list, limit: int = 10, **kwargs) -> list[T]:
         try:
             documents = cls._search(query_vector=query_vector, limit=limit, **kwargs)
-        except exceptions.UnexpectedResponse:
-            logger.error(f"Failed to search documents in '{cls.get_collection_name()}'.")
+        except exceptions.UnexpectedResponse as e:
+            collection_name = cls.get_collection_name()
+            # A collection that was never filled (e.g. no posts were crawled) has nothing to return.
+            # Any other error is a real failure and must not look like "no results".
+            if e.status_code != 404:
+                raise
+
+            if collection_name not in _missing_collections_warned:
+                logger.warning(f"Collection '{collection_name}' does not exist. Searches return nothing from it.")
+                _missing_collections_warned.add(collection_name)
 
             documents = []
 
