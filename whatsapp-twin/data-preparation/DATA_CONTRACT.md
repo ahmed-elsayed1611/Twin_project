@@ -20,7 +20,8 @@ The implementation removes invisible bidirectional marks before parsing, transla
 |---|---|---|
 | Sender handling | Retain the configured self sender as `Ahmed`; map every other sender to `Contact`. | The model learns Ahmed’s responses without exposing contact identities. |
 | Content cleaning | Remove system/media/deleted-message notices and normalize whitespace. | Removes non-conversational training noise. |
-| PII reduction | Replace phone numbers, email addresses, URLs, credential-like tokens (a word glued to 6+ digits, e.g. a shared login/PIN), and explicitly supplied sensitive terms with placeholders. | Reduces accidental exposure in training files. |
+| PII reduction | Replace phone numbers, email addresses, URLs, credential-like tokens (a word glued to 6+ digits, e.g. a shared login/PIN), 6–7 digit numbers (codes, account numbers, amounts), and explicitly supplied sensitive terms with placeholders. | Reduces accidental exposure in training files. |
+| Name redaction | With `--redact-names-file`, replace every name in the private names list with `[NAME]`, as a whole word, keeping an attached و/ب/ل prefix. The build fails if a listed name survives. | Sender labels alone left names inside messages: before this rule, 24.1% of training samples (6.1% of the replies the model learns to write) contained a private name. |
 | Turn construction | Merge same-sender bursts that are no more than 300 seconds apart. | Preserves the meaning of short WhatsApp message bursts, including a multi-part reply typed with a short thinking pause in the middle. |
 | Session boundary | Start a new session after four hours with no messages. | Prevents unrelated conversations from sharing context. |
 | Sample creation | Keep a sample only when `Contact` is followed by `Ahmed`. | Makes Ahmed’s actual message the supervised target. |
@@ -44,7 +45,9 @@ Each chat-format record has a neutral system message, the sanitized conversation
 
 ## Privacy Boundary
 
-This is **privacy reduction, not a guarantee of anonymization**. The dataset still contains personal conversation text. Keep the raw export and generated dataset local, do not upload them to a public repository, and add known names or other sensitive terms through `--redact-term` before sharing data with any training provider.
+This is **privacy reduction, not a guarantee of anonymization**. The dataset still contains personal conversation text. Keep the raw export and generated dataset local, do not upload them to a public repository, and always build with `--redact-names-file` (the private names list) before sharing data with any training provider. Use `--redact-term` only for other literal terms: it matches inside longer words, so a short name passed there would also damage everyday words.
+
+Name redaction removes the listed names only. Places, plans, health, money and relationships described in words, a name missing from the list, and everything the other person wrote are still in the text.
 
 Automated PII redaction (email, URL, phone, credential-like tokens) is pattern-based and will not catch everything — for example, a phone number or reference code that doesn't match the expected shape, or a sensitive word with no digits attached at all. Treat `audit_report.json`'s `pii_redactions` counts as a lower bound, not a guarantee, and spot-check `all_samples.json` directly before treating the dataset as safe to use.
 

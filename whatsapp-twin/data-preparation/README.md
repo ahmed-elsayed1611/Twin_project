@@ -68,7 +68,13 @@ If WhatsApp uses a different display name for you, override the default `Ahmed` 
 SELF_SENDER='Ahmed Mohamed' ./scripts/run_from_raw.sh /absolute/path/to/whatsapp_chat.txt.txt
 ```
 
-The command runs the unit tests first. It stops immediately if a test fails or if the raw file cannot be read. It then builds and validates the dataset.
+To replace the real names inside messages with `[NAME]` (strongly recommended; the file is private and never committed):
+
+```bash
+PRIVATE_NAMES_FILE=~/private_names.txt ./scripts/run_from_raw.sh /absolute/path/to/whatsapp_chat.txt.txt
+```
+
+The command runs the unit tests first. It stops immediately if a test fails or if the raw file cannot be read. It then builds and validates the dataset. Without `PRIVATE_NAMES_FILE` it prints a warning: only the sender labels are anonymized, not names written inside messages.
 
 ## Output Files
 
@@ -103,16 +109,18 @@ A valid build must report `"valid": true` in `audit_report.json` under `output_v
 
 The project maps third-party sender labels to `Contact`, replaces detected emails, URLs, and phone-like strings with placeholders, and skips common system/media/deleted-message events. It does **not** guarantee that all personal information has been removed from free-form text.
 
-Before you upload any data to a training service, inspect random lines in `train.jsonl` and add sensitive literal terms by using `--redact-term` directly with the Python command. The default shell runner intentionally does not guess names for you.
+Before you upload any data to a training service, build with the private names list and inspect random lines in `train.jsonl`. Use `--redact-names-file` for names: it matches whole words and keeps the و/ب/ل prefix. `--redact-term` is for other literal terms (an address, a company): it also matches inside longer words, so a short name passed there would break everyday words.
 
 ```bash
 python3 src/twin_dataset_builder.py \
   --input /absolute/path/to/whatsapp_chat.txt.txt \
   --output-dir outputs \
   --self-sender Ahmed \
-  --redact-term 'A private name' \
+  --redact-names-file ~/private_names.txt \
   --redact-term 'A private address'
 ```
+
+Measured on the real export (15 Oct): without the names file, 24.1% of training samples contained a private name, 6.1% in the reply the model learns to write. With it, 0, confirmed by `tools/check_private_names.py`.
 
 Keep the raw export and the `outputs/` directory private. Do not commit them to GitHub.
 

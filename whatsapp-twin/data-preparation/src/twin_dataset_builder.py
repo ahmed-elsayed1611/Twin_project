@@ -59,6 +59,25 @@ PHONE_PATTERN = re.compile(
 # narrower pattern and its own placeholder rather than loosening PHONE_PATTERN.
 CREDENTIAL_LIKE_PATTERN = re.compile(r"\b[A-Za-z\u0600-\u06FF]{3,}[0-9٠-٩]{6,}\b")
 
+# 6–7 digit numbers: too short for PHONE_PATTERN (8+), but in a chat they are mostly one-time codes,
+# account or order numbers and amounts. Same boundaries as PHONE_PATTERN, so decimals and versions
+# are left alone.
+LONG_NUMBER_PATTERN = re.compile(r"(?<![\w.])[0-9٠-٩]{6,7}(?![0-9٠-٩])")
+
+# The private-name matching rules live in whatsapp-twin/tools/private_names_lib.py, shared with the
+# pre-push scanner and the evaluation notebook. They are imported only when names are given, so the
+# builder still runs on its own, with the standard library only, when name redaction is not used.
+TOOLS_DIR = Path(__file__).resolve().parents[2] / "tools"
+
+
+def _private_names_lib():
+    if str(TOOLS_DIR) not in sys.path:
+        sys.path.insert(0, str(TOOLS_DIR))
+    import private_names_lib
+
+    return private_names_lib
+
+
 # WhatsApp appends this marker directly onto the text of a message the sender
 # edited after sending. It is not part of what the person actually said, so
 # it must be stripped before the content is treated as real conversation —
@@ -153,6 +172,7 @@ class WhatsAppDatasetBuilder:
         max_duplicate_responses: int = 3,
         validation_ratio: float = 0.10,
         redact_terms: Sequence[str] = (),
+        private_names: Sequence[str] = (),
         system_message: str = DEFAULT_SYSTEM_MESSAGE,
     ) -> None:
         if not self_sender.strip():
@@ -177,6 +197,11 @@ class WhatsAppDatasetBuilder:
             for term in redact_terms
             if term.strip()
         ]
+        # Whole-word matching with the و/ب/ل prefixes. --redact-term matches inside words, which would
+        # also break everyday words that contain a short name, so names must come through here.
+        names = sorted({name.strip() for name in private_names if name.strip()}, key=len, reverse=True)
+        self.private_names_count = len(names)
+        self.name_patterns = _private_names_lib().compile_name_patterns(names) if names else None
         self.stats = BuildStats()
         self._rejections: list[dict[str, object]] = []
 
@@ -254,11 +279,19 @@ class WhatsAppDatasetBuilder:
             ("URL", URL_PATTERN),
             ("PHONE", PHONE_PATTERN),
             ("CREDENTIAL", CREDENTIAL_LIKE_PATTERN),
+            ("NUMBER", LONG_NUMBER_PATTERN),
         )
         for label, pattern in replacements:
             content, count = pattern.subn(f"[{label}]", content)
             if count:
                 self.stats.pii_redactions[label] += count
+
+        if self.name_patterns:
+            names_lib = _private_names_lib()
+            count = len(names_lib.find_private_names(content, self.name_patterns))
+            if count:
+                content = names_lib.anonymize(content, self.name_patterns)
+                self.stats.pii_redactions["NAME"] += count
 
         for pattern in self.user_redaction_patterns:
             content, count = pattern.subn("[REDACTED]", content)
@@ -487,8 +520,11 @@ class WhatsAppDatasetBuilder:
                 or URL_PATTERN.search(text)
                 or PHONE_PATTERN.search(text)
                 or CREDENTIAL_LIKE_PATTERN.search(text)
+                or LONG_NUMBER_PATTERN.search(text)
             ):
                 return "possible_unredacted_pii"
+            if self.name_patterns and _private_names_lib().find_private_names(text, self.name_patterns):
+                return "possible_unredacted_name"
             if EDIT_TAG_PATTERN.search(text):
                 return "unstripped_edit_tag"
         return None
@@ -560,6 +596,8 @@ class WhatsAppDatasetBuilder:
                 "validation_ratio": self.validation_ratio,
                 "system_message": self.system_message,
                 "explicit_redaction_terms_count": len(self.user_redaction_patterns),
+                # A count only: the names themselves must never be written to an output file.
+                "private_names_count": self.private_names_count,
             }
             audit = self.stats.to_json(config)
             audit["output_validation"] = validation_result
@@ -620,6 +658,15 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
         help="Literal sensitive term to replace with [REDACTED]. Repeat this option as needed.",
     )
+    parser.add_argument(
+        "--redact-names-file",
+        type=Path,
+        help=(
+            "private_names.txt (one name per line, # for comments). Each name is replaced with [NAME] as a "
+            "whole word, keeping a و/ب/ل prefix. Use this for names, not --redact-term, which also matches "
+            "inside longer words."
+        ),
+    )
     parser.add_argument("--log-level", default="INFO", choices=("DEBUG", "INFO", "WARNING", "ERROR"))
     return parser.parse_args(argv)
 
@@ -628,6 +675,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(argv)
     logging.basicConfig(level=getattr(logging, args.log_level), format="%(levelname)s %(message)s")
     try:
+        private_names = []
+        if args.redact_names_file:
+            private_names = _private_names_lib().load_private_names(args.redact_names_file.expanduser().resolve())
+        else:
+            LOGGER.warning("No --redact-names-file: names inside messages are NOT redacted.")
         builder = WhatsAppDatasetBuilder(
             self_sender=args.self_sender,
             context_turns=args.context_turns,
@@ -637,6 +689,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             max_duplicate_responses=args.max_duplicate_responses,
             validation_ratio=args.validation_ratio,
             redact_terms=args.redact_term,
+            private_names=private_names,
         )
         audit = builder.run(args.input.expanduser().resolve(), args.output_dir.expanduser().resolve())
     except (OSError, ValueError, RuntimeError) as exc:

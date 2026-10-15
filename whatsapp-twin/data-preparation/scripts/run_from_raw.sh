@@ -12,6 +12,7 @@ SELF_SENDER="${SELF_SENDER:-Ahmed}"
 if [[ -z "${RAW_FILE}" ]]; then
   echo "Usage: $0 /absolute/path/to/whatsapp_chat.txt.txt [output_directory]" >&2
   echo "Optional: SELF_SENDER='Your WhatsApp Name' $0 /path/to/chat.txt" >&2
+  echo "Optional: PRIVATE_NAMES_FILE=~/private_names.txt $0 /path/to/chat.txt  (redacts names as [NAME])" >&2
   exit 2
 fi
 
@@ -33,6 +34,18 @@ echo "[2/4] Running the dependency-free test suite"
   python3 -m unittest discover -s tests -v
 )
 
+# Names inside messages are only redacted when a names file is given (it is private and never committed).
+NAME_ARGS=()
+if [[ -n "${PRIVATE_NAMES_FILE:-}" ]]; then
+  if [[ ! -f "${PRIVATE_NAMES_FILE}" ]]; then
+    echo "Error: PRIVATE_NAMES_FILE was not found: ${PRIVATE_NAMES_FILE}" >&2
+    exit 2
+  fi
+  NAME_ARGS=(--redact-names-file "${PRIVATE_NAMES_FILE}")
+else
+  echo "Warning: PRIVATE_NAMES_FILE is not set, so names inside messages will NOT be redacted." >&2
+fi
+
 echo "[3/4] Building the local dataset"
 python3 "${PROJECT_ROOT}/src/twin_dataset_builder.py" \
   --input "${RAW_FILE}" \
@@ -43,7 +56,8 @@ python3 "${PROJECT_ROOT}/src/twin_dataset_builder.py" \
   --burst-gap-seconds 300 \
   --min-response-chars 2 \
   --max-duplicate-responses 3 \
-  --validation-ratio 0.10
+  --validation-ratio 0.10 \
+  "${NAME_ARGS[@]}"
 
 echo "[4/4] Running the post-build quality audit"
 python3 "${PROJECT_ROOT}/scripts/audit_outputs.py" "${OUTPUT_DIR}"
