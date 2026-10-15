@@ -11,7 +11,15 @@ class Reranker(RAGStep):
     def __init__(self, mock: bool = False) -> None:
         super().__init__(mock=mock)
 
-        self._model = CrossEncoderModelSingleton()
+        # Loaded on first use, so mock mode never downloads or loads the model.
+        self._model: CrossEncoderModelSingleton | None = None
+
+    @property
+    def model(self) -> CrossEncoderModelSingleton:
+        if self._model is None:
+            self._model = CrossEncoderModelSingleton()
+
+        return self._model
 
     @opik.track(name="Reranker.generate")
     def generate(self, query: Query, chunks: list[EmbeddedChunk], keep_top_k: int) -> list[EmbeddedChunk]:
@@ -19,9 +27,10 @@ class Reranker(RAGStep):
             return chunks
 
         query_doc_tuples = [(query.content, chunk.content) for chunk in chunks]
-        scores = self._model(query_doc_tuples)
+        scores = self.model(query_doc_tuples)
 
-        scored_query_doc_tuples = list(zip(scores, chunks, strict=False))
+        # strict: a score list of the wrong length would otherwise pair scores with the wrong chunks.
+        scored_query_doc_tuples = list(zip(scores, chunks, strict=True))
         scored_query_doc_tuples.sort(key=lambda x: x[0], reverse=True)
 
         reranked_documents = scored_query_doc_tuples[:keep_top_k]
