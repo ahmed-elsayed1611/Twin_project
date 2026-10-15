@@ -1,5 +1,8 @@
+from functools import cache
+
 import opik
 from fastapi import FastAPI, HTTPException
+from loguru import logger
 from opik import opik_context
 from pydantic import BaseModel
 
@@ -14,6 +17,10 @@ configure_opik()
 
 app = FastAPI()
 
+# Returned instead of calling the model when retrieval finds nothing: without context the model would answer
+# from memory, which is the problem RAG is there to solve.
+NO_CONTEXT_ANSWER = "I couldn't find anything about this in the knowledge base, so I won't guess."
+
 
 class QueryRequest(BaseModel):
     query: str
@@ -21,6 +28,13 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
+
+
+@cache
+def get_retriever() -> ContextRetriever:
+    """One retriever for the whole app instead of a new one for every request."""
+
+    return ContextRetriever(mock=False)
 
 
 @opik.track
@@ -35,8 +49,13 @@ def call_llm_service(query: str, context: str | None) -> str:
 
 @opik.track
 def rag(query: str) -> str:
-    retriever = ContextRetriever(mock=False)
-    documents = retriever.search(query, k=3)
+    documents = get_retriever().search(query, k=3)
+    if not documents:
+        logger.warning("No context was retrieved for the query. Answering without calling the model.")
+        opik_context.update_current_trace(tags=["rag", "no_context"])
+
+        return NO_CONTEXT_ANSWER
+
     context = EmbeddedChunk.to_context(documents)
 
     answer = call_llm_service(query, context)
@@ -56,11 +75,16 @@ def rag(query: str) -> str:
     return answer
 
 
+# A plain `def`, not `async def`: rag() blocks for seconds (OpenAI, Qdrant, SageMaker). FastAPI runs plain
+# endpoints in a thread pool, so one slow request no longer holds up every other request.
 @app.post("/rag", response_model=QueryResponse)
-async def rag_endpoint(request: QueryRequest):
+def rag_endpoint(request: QueryRequest):
     try:
         answer = rag(query=request.query)
 
         return {"answer": answer}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        # The details stay in the server log; the caller must not see hosts, URLs or credentials.
+        logger.exception("The RAG request failed.")
+
+        raise HTTPException(status_code=500, detail="Internal error while answering the query.") from e
