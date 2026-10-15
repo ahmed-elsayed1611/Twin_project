@@ -72,7 +72,9 @@ class Settings(BaseSettings):
     SAGEMAKER_ENDPOINT_INFERENCE: str = "twin"
     TEMPERATURE_INFERENCE: float = 0.01
     TOP_P_INFERENCE: float = 0.9
-    MAX_NEW_TOKENS_INFERENCE: int = 150
+    # 150 tokens (about 110 words) cut LinkedIn posts off mid-sentence. 600 still fits the endpoint:
+    # up to MAX_INPUT_LENGTH (2048) prompt tokens + 600 stays under MAX_TOTAL_TOKENS (4096).
+    MAX_NEW_TOKENS_INFERENCE: int = 600
 
     # RAG
     TEXT_EMBEDDING_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
