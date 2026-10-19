@@ -4,3 +4,4 @@ peft
 accelerate
 datasets
 safetensors
+scipy
