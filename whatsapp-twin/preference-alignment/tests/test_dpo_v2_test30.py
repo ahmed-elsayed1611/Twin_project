@@ -61,7 +61,8 @@ check("1.5 both models answered all 30", all(len(ns.get("results", {}).get(m, []
 blind = out.split("## blind end")[0] if "## blind end" in out else out[: out.find("Totals per model")]
 check("1.6 the blind section shows A and B without model names",
       "   A: " in blind and "   B: " in blind and "sft_v2:" not in blind and "dpo_v2:" not in blind)
-check("1.7 without votes, nothing is revealed", "Fill VOTES" in out and "You preferred" not in out)
+check("1.7 without votes, nothing is revealed",
+      "Fill VOTES" in out and "You preferred" not in out and "   sft_v2: " not in out and "Model names hidden" in out)
 check("1.8 the filtered replies never show a placeholder",
       not any(ns["PLACEHOLDER"].search(r["filtered"]) for m in ("sft_v2", "dpo_v2") for r in ns["results"][m]))
 saved = json.loads(results_path.read_text(encoding="utf-8")) if results_path.exists() else {}
@@ -73,6 +74,7 @@ all_dpo = "".join("A" if a else "B" for a in dpo_is_a)
 ns2, out2, error2 = run_notebook(drive, notebook=NOTEBOOK, replacements={'VOTES = ""': f"VOTES = {all_dpo!r}"})
 check("2.1 voting for DPO every time gives DPO 30 wins", error2 is None and ns2.get("VOTE_RESULT", {}).get("dpo_v2") == 30,
       ns2.get("VOTE_RESULT"))
+check("2.1b after voting, the names are shown", "   dpo_v2: " in out2 and "Model names hidden" not in out2)
 mixed = "=" * 10 + "".join("B" if a else "A" for a in dpo_is_a[10:])
 ns3, _, error3 = run_notebook(drive, notebook=NOTEBOOK, replacements={'VOTES = ""': f"VOTES = {mixed!r}"})
 check("2.2 ties and SFT votes are counted", error3 is None and ns3.get("VOTE_RESULT", {}).get("ties") == 10
