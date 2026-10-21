@@ -156,6 +156,31 @@ finally:
     sys.modules["trl"].DPOConfig = original_config
 check("4.1 plain DPO without the anchor is refused", isinstance(error7, RuntimeError) and "anchor" in str(error7), repr(error7))
 
+
+# Unsloth's PatchDPOTrainer does this (found on Colab): an __init__ that names only some settings, the rest via **kwargs
+class _UnslothStyleConfig(original_config):
+    def __init__(self, output_dir=None, beta=0.1, **kwargs):
+        super().__init__(output_dir=output_dir, beta=beta, **kwargs)
+
+
+class _DroppingConfig(original_config):
+    def __init__(self, output_dir=None, beta=0.1, loss_type=None, loss_weights=None, **kwargs):
+        super().__init__(output_dir=output_dir, beta=beta, **kwargs)  # loses the anchor without a word
+
+
+for config_class in (_UnslothStyleConfig, _DroppingConfig):
+    sys.modules["trl"].DPOConfig = config_class
+    try:
+        drive8, _ = make_project()
+        _, out8, error8 = run(drive8)
+    finally:
+        sys.modules["trl"].DPOConfig = original_config
+    if config_class is _UnslothStyleConfig:
+        check("4.2 Unsloth's patched DPOConfig keeps the anchor", error8 is None and "Anchor: loss_type" in out8, repr(error8))
+    else:
+        check("4.3 a DPOConfig that drops the anchor is caught",
+              isinstance(error8, AssertionError) and "ignored loss_type" in str(error8), repr(error8))
+
 # 5. A Colab disconnect during training, then a re-run
 import transformers  # noqa: E402
 
