@@ -137,7 +137,10 @@ check("3.1 changed settings under the same EVAL_RUN_NAME are refused",
       isinstance(error3, ValueError) and "different settings" in str(error3), repr(error3))
 
 # 4. A trusted judge counts in the findings
-ns4, _, error4 = run(drive, {"MIN_JUDGE_CALIBRATION = 0.65": "MIN_JUDGE_CALIBRATION = 0.0"})
+ns4, _, error4 = run(drive, {"MIN_JUDGE_CALIBRATION = 0.65": "MIN_JUDGE_CALIBRATION = 0.0",
+                             "MIN_OPTION_MASS = 0.5": "MIN_OPTION_MASS = 0.0"})
+check("4.0 the tiny random judge fails the format gate (its probability is not on A/B)",
+      ns["JUDGE_TRUSTED"] is False and ns["ANSWERS_IN_FORMAT"] is False)
 check("4.1 a judge that passes calibration is used in the findings",
       error4 is None and ns4["JUDGE_TRUSTED"] and any("judge" in k for k in ns4["FINDINGS"]), repr(error4))
 
@@ -147,6 +150,17 @@ ns5, out5, error5 = run(drive, {'VOTES = ""': f"VOTES = {votes!r}"})
 check("5.1 votes are counted for the right model and compared with the judge",
       error5 is None and ns5["HUMAN"]["dpo_v2"] == sum(ns5["DPO_IS_A"]) and "The judge agreed with you" in out5, repr(error5))
 
+# 5b. A disconnect while saving left half a line at the end of a file
+with open(eval_dir(project) / "outputs_dpo_v2_private.jsonl", "a", encoding="utf-8") as f:
+    f.write('{"id": "half-writ')
+with open(eval_dir(project) / f"judge_{ns['JUDGE_TAG']}_private.jsonl", "a", encoding="utf-8") as f:
+    f.write('{"comparison": "Q1 se')
+ns5b, out5b, error5b = run(drive)
+check("5.2 a half-written last line is dropped and the run continues",
+      error5b is None and out5b.count("Dropping a half-written last line") == 2
+      and all(json.loads(line) for line in (eval_dir(project) / "outputs_dpo_v2_private.jsonl").read_text(encoding="utf-8").splitlines()),
+      repr(error5b))
+
 # 6. Without the v1 models
 drive6, project6, _ = make_drive(v1=False)
 ns6, out6, error6 = run(drive6)
@@ -155,11 +169,35 @@ check("6.1 missing v1 models are skipped, and v2 is still evaluated",
       and ns6["V1_LEAK"]["checked"] is False and "not measured" in ns6["ANSWERS"]["Q2 Is v2 better than the old final model (DPO v1)?"],
       repr(error6))
 
-# 7. Without the judge
-drive7, _, _ = make_drive(v1=False)
+# 6b. The adapter must be the one its training run recorded
+from safetensors.torch import load_file  # noqa: E402
+
+adapter_dir = project6 / "dpo_v2" / "runs" / "dpo_v2_beta02_sft05" / "adapter"
+fingerprint = sum(t.float().abs().sum().item() for k, t in load_file(adapter_dir / "adapter_model.safetensors").items() if "lora_" in k)
+(adapter_dir.parent / "run_summary.json").write_text(json.dumps({"lora_fingerprint": {"after": fingerprint * 1.01}}), encoding="utf-8")
+_, _, error6b = run(drive6)
+check("6.2 an adapter that is not the recorded one is refused",
+      isinstance(error6b, AssertionError) and "not the one its training run recorded" in str(error6b), repr(error6b))
+(adapter_dir.parent / "run_summary.json").write_text(json.dumps({"lora_fingerprint": {"after": fingerprint}}), encoding="utf-8")
+ns6c, out6c, error6c = run(drive6)
+check("6.3 the recorded adapter passes", error6c is None and ns6c["ADAPTER_IDENTITY"]["dpo_v2"] is True, repr(error6c))
+
+# 7. Without the judge, then a judge that returns NaN
+drive7, project7, _ = make_drive(v1=False)
 ns7, out7, error7 = run(drive7, {"RUN_JUDGE = True": "RUN_JUDGE = False"})
 check("7.1 with the judge off, the objective evidence still answers", error7 is None and ns7["JUDGE"] == {} and "Q1 Did DPO v2" in out7,
       repr(error7))
+nan = {"p_first = torch.sigmoid(log_a - log_b)": "p_first = torch.full_like(log_a, float('nan'))"}
+ns7b, _, error7b = run(drive7, nan)
+judge_file = eval_dir(project7) / f"judge_{ns7b['JUDGE_TAG']}_private.jsonl"
+saved7 = [json.loads(line) for line in judge_file.read_text(encoding="utf-8").splitlines()] if judge_file.exists() else []
+check("7.2 NaN answers are saved as 'failed', never as a win, and stop the run",
+      isinstance(error7b, AssertionError) and "NaN" in str(error7b)
+      and any(r["winner"] == "failed" for r in saved7) and not any(r["winner"] in ("a", "b") for r in saved7), repr(error7b))
+ns7c, _, error7c = run(drive7)
+check("7.3 the next run judges the failed ones again",
+      error7c is None and all(row["failed"] == 0 for row in ns7c["JUDGE"].values())
+      and all(row["n"] == len(ns7c["GEN"]) for row in ns7c["JUDGE"].values()), repr(error7c))
 
 # 8. An adapter that changes nothing is refused
 drive8, _, _ = make_drive(v1=False, v2_adapter_changes=False)
