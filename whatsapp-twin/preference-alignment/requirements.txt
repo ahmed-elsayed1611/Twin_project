@@ -1,6 +1,9 @@
-# scripts/build_hard_negative_dpo_dataset.py (local, CPU):
-transformers
-huggingface_hub
+# scripts/build_dpo_pairs_v2.py (local, CPU; no tokenizer or Hugging Face login needed):
+numpy
 sentence-transformers
 
-# notebooks/dpo_training.ipynb installs its own stack inside Colab (unsloth, trl, datasets).
+# scripts/build_hard_negative_dpo_dataset.py (v1, local, CPU) also needs:
+transformers
+huggingface_hub
+
+# The notebooks install their own stack inside Colab (unsloth, which brings a compatible trl).

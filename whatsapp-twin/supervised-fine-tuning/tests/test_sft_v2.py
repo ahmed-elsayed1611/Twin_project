@@ -12,7 +12,7 @@ import sys
 import transformers
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from harness import new_drive, run_notebook, write_project  # noqa: E402
+from harness import DECOMPOSED_REPLY, new_drive, run_notebook, write_project  # noqa: E402
 
 RESULTS = []
 
@@ -58,6 +58,10 @@ check("1.8 the merged v2 model is saved with its run summary",
       and os.path.exists(os.path.join(p["merged"], "sft_run_summary.json")))
 check("1.9 the v1 model folder is never written", not os.path.exists(p["v1"]))
 check("1.10 the inference check counts private names in the replies", "Replies mentioning a private name:" in out)
+decomposed = [r for r in ns.get("train_kept", []) if r["messages"][-1]["content"] == DECOMPOSED_REPLY]
+example = ns["train_dataset"][ns["train_kept"].index(decomposed[0])] if decomposed else None
+check("1.11 a reply the tokenizer normalises (decomposed letter) passes the mask check",
+      example is not None and ns["trained_text"](example) != DECOMPOSED_REPLY + "<|im_end|>" and error is None)
 
 # 2. Running the finished notebook again
 ns2, out2, error2 = run_notebook(drive)

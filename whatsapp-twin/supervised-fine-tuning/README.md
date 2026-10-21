@@ -56,6 +56,55 @@ python supervised-fine-tuning/tests/test_sft_v2.py
 
 Not tested on CPU: Unsloth itself and the GPU. The first Colab run is the real test for those.
 
+### Running v2 on Kaggle instead: `notebooks/sft_nilechat_v2_kaggle.ipynb`
+
+The free Colab tier stopped the first run after about 2 hours (at step ~750 of a run that needs ~1,300–1,700). Kaggle gives ~30 free GPU hours a week, sessions of up to 12 hours, and **Save & Run All (Commit)** keeps running with the browser closed.
+
+The Kaggle notebook is generated from the Colab one: the data checks, the final-reply labels, the trainer, early stopping and the run summary are the same code. What differs:
+
+| | Colab | Kaggle |
+|---|---|---|
+| Data | `MyDrive/ahmed_twin/redacted/` | A **private Kaggle dataset** with `train.jsonl`, `validation.jsonl`, `audit_report.json`, found by its `audit_report.json` |
+| Token | Typed (`getpass`) | Kaggle Secrets: `HF_TOKEN` |
+| Name scan | With `private_names.txt` from Drive | Skipped, with a message: the names file stays on your PC (the data was scanned there before upload). The audit check still refuses any build made without names redaction |
+| GPUs | One T4/L4 | "GPU T4 x2" is fine: the second GPU is hidden, Unsloth trains on one |
+| Result | Merged model on Drive | `sft_v2_best_adapter.zip` (adapter + `run_summary.json`, ~0.2 GB) in the Output tab |
+
+Then upload the zip to `MyDrive/ahmed_twin/` and run **`notebooks/sft_v2_merge_adapter.ipynb`** on Colab (about 10 minutes on a free T4). It checks the zip comes from the final-reply run, merges it into `model_merged_nilechat_v2`, verifies the size, and never touches v1.
+
+Tests: `python supervised-fine-tuning/tests/test_sft_v2_kaggle.py` (finding the dataset, refusing two or zero datasets and unredacted builds, the zip, then merging it, including refusing to overwrite).
+
+### Testing v2 before DPO: `notebooks/sft_quick_test_v1_vs_v2.ipynb`
+
+The SFT v2 run stopped at step 1,750 with its best eval loss 2.6385 at checkpoint-1550 (the end of the first pass, as in v1). A first quick test on 60 unseen conversations:
+
+| | Real replies | v1 | v2 |
+|---|---:|---:|---:|
+| Loss on the real reply (lower is better) | — | 2.621 | **2.544** |
+| Conversations where the model predicts better | — | 22 | **38** (p = 0.052) |
+| Replies with a private name | 0 | 7 | **0** |
+| Median reply length (characters) | 22.5 | 47.5 | **31.5** |
+
+What it also showed, and what the second version of the notebook does about it:
+
+| Seen | Cause | Now |
+|---|---|---|
+| Single test messages got off-topic or invented answers | The model only ever trained with a few earlier messages; a lone line is outside what it learned. Real chat replies also refer to things outside the visible context | Metrics on real contexts; printed examples are made-up **multi-turn** chats |
+| Long rambling replies with temperature 0.4 + repetition penalties | The penalties push away from Ahmed's short, repeated words | Setting B: temperature 0.4, no penalties, 60 new tokens |
+| `[NAME]` / `[PHONE]` written by v2 | It learned from redacted data (the proof redaction worked) | `tools/reply_filter.py`, embedded unchanged, measured raw vs filtered |
+| Replies address everyone as the one contact in the data ("تعبانه", "قوليلي") | One conversation, one person, one neutral system message | A data limitation: more contacts, with who-you-are-talking-to in the system message |
+| Invented personal facts (names, birth year, three different cities) | SFT learns style, not facts | Facts belong in retrieval (chapter 9), not in training. Places are private too |
+| *"incorrect regex pattern … will lead to incorrect tokenization"* on load (transformers 5) | Unknown | A **tokenizer check**: default vs `fix_mistral_regex=True` vs the original Qwen2.5-3B splitting, on every real message |
+
+300 conversations instead of 60, and a final **ready-for-DPO** verdict (tokenizer harmless, v2 at least as good as v1, no names or placeholders after filtering, fallbacks under 10%). Totals only are saved, to `sft_runs/sft_v2_redacted_final_reply_loss/test_v1_vs_v2.json`. Test: `python supervised-fine-tuning/tests/test_quick_test.py`.
+
+### Checklist before DPO v2
+
+1. Run `sft_quick_test_v1_vs_v2.ipynb` (version 2) and read Section 9. **If the tokenizer verdict is "REAL PROBLEM", retrain SFT v2 with the fix before DPO**, or DPO inherits the wrong splitting.
+2. Commit everything: the Kaggle notebooks, this test, `tools/reply_filter.py`, the DPO v2 builder and notebook.
+3. Build the pairs locally (`preference-alignment/scripts/build_dpo_pairs_v2.py`, downloads a ~470 MB embedding model once) and upload them to `MyDrive/ahmed_twin/dpo_v2/pairs/`.
+4. Then `preference-alignment/notebooks/dpo_v2.ipynb`.
+
 ## Configuration
 
 | Setting | Value |

@@ -8,11 +8,66 @@ Follows the preference alignment chapter of the [*LLM Engineer's Handbook*](http
 
 ```
 preference-alignment/
-├── scripts/build_hard_negative_dpo_dataset.py   # builds train / dev / test preference pairs (local, CPU)
-├── notebooks/dpo_training.ipynb                 # self-diagnosing DPO training (Colab, GPU)
+├── scripts/build_hard_negative_dpo_dataset.py   # v1: train / dev / test preference pairs (local, CPU)
+├── scripts/build_dpo_pairs_v2.py                # v2: pairs from the redacted data, split by conversation
+├── notebooks/dpo_training.ipynb                 # v1: self-diagnosing DPO training on SFT v1 (run v7 selected)
+├── notebooks/dpo_v2.ipynb                       # v2: DPO on top of SFT v2
+├── tests/                                       # CPU tests for the v2 builder and notebook
 ├── requirements.txt
 └── README.md
 ```
+
+## Version 2: DPO on top of SFT v2
+
+The v1 results below (v7) stay as they are: that model was trained on the unredacted data, on top of SFT v1. v2 is the DPO stage of the retrained pipeline: [SFT v2](../supervised-fine-tuning#version-2-notebookssft_nilechat_v2ipynb) (redacted data, loss on the final reply only) → DPO v2 → the evaluation.
+
+### The pairs: `build_dpo_pairs_v2.py`
+
+| Problem in v1 | v2 |
+|---|---|
+| Pairs built from the unredacted data | Reads the **redacted** build and refuses data built without the names file; `--private-names` re-scans every pair |
+| Nothing tied the pairs to the SFT model | `manifest.json` records the SHA-256 of `train.jsonl` and `validation.jsonl`; the notebook requires them to equal **SFT v2's** run summary, so the test conversations are unseen by this exact model |
+| Dev and test from the same file with the same seed: 500 test pairs, 300 after removing repeats of dev; windows of one conversation could land in both | Validation is split **by conversation** (consecutive samples sharing no message start a new one); dev ≈ 200 pairs, **test = every other validation conversation** |
+| Dev/test negatives could come from the other split's replies | Each split draws negatives from its own replies |
+| A rejected reply could still answer the last message | Also refused if too similar **to the last message** (`--max-prompt-similarity 0.5`) |
+| `[NAME]` placeholders made Arabic replies look non-Arabic | Placeholders are ignored when measuring the Arabic ratio |
+| Prompts pre-templated with the original tokenizer (needed a Hugging Face login) | Pairs store **messages**; the notebook applies SFT v2's own chat template, so prompts match SFT v2's training exactly. No tokenizer or login needed here |
+
+### The notebook: `dpo_v2.ipynb`
+
+It keeps what worked in v8 (step-0 baseline, separate dev/test, McNemar, LoRA fingerprints, verified best-checkpoint restore, automatic diagnosis) and fixes what a review against **today's library versions** found:
+
+| Found | v2 |
+|---|---|
+| **TRL 1.15** (what `pip install unsloth` brings on Colab) removed `rpo_alpha` and `max_prompt_length`. v8 would quietly fall back to **plain DPO** (no anchor), then crash on `max_prompt_length` | The anchor is `loss_type=["sigmoid", "sft"]` with `loss_weights=[1, 0.5]` (the same loss as `rpo_alpha=0.5`), or `rpo_alpha` on older TRL. Plain DPO is **refused**, and any setting TRL does not accept stops the notebook instead of being dropped |
+| TRL appends the tokenizer's EOS to each reply, which may not be `<\|im_end\|>`, the token SFT v2 learned to end replies with | The tokenizer's EOS is set to `<\|im_end\|>`, and the **tokenized** data is checked: every reply ends with exactly one `<\|im_end\|>`, prompts unchanged |
+| TRL's default `keep_start` truncation cuts the end of a long pair, which is the reply | Pairs over `max_length` are dropped and counted before training |
+| TRL ≥ 1 adds a frozen copy of the adapter (`ref`) as DPO's reference: fingerprints counted both adapters, and saves stored both | Fingerprints and saving use only the trained adapter (`default`). The `ref` copy of a fresh adapter is exactly SFT v2, so the reference is correct |
+| Resumed from any checkpoint in the folder | Resumes only if SFT model, pairs and `CONFIG` match `run_config.json`; the SFT baseline is saved and reused |
+| Head-to-head loaded any run's adapter, including v1 adapters trained on a different base model | Only runs on the same SFT model; v1 vs v2 belongs in the evaluation notebook |
+| Real conversations and generations in `run_summary.json` | Totals in `run_summary.json`; real text in `generations_private.json`; names in generations counted, never printed |
+
+Starting settings are v7's (`beta=0.2`, anchor 0.5, learning rate 1e-5, batch 1 × 16, evaluation every 25 steps, early stopping).
+
+### Running v2
+
+```bash
+pip install -r requirements.txt
+python scripts/build_dpo_pairs_v2.py --data-dir ../data-preparation/outputs/redacted \
+    --output-dir dpo_v2_pairs --private-names ~/private_names.txt
+```
+
+Upload `train.jsonl`, `dev.jsonl`, `test.jsonl` and `manifest.json` from `dpo_v2_pairs/` to `MyDrive/ahmed_twin/dpo_v2/pairs/`, then run `notebooks/dpo_v2.ipynb` on a T4 (Run all; after a disconnect, Run all again). Results go to `MyDrive/ahmed_twin/dpo_v2/runs/<RUN_NAME>/`; v1's `MyDrive/DPO/` is never written.
+
+### Tests (CPU, no GPU, no private data)
+
+```bash
+pip install -r ../supervised-fine-tuning/tests/requirements-test.txt trl==1.15.0
+python tests/test_build_dpo_pairs_v2.py   # 18 checks: grouping, splits, leaks, refusals
+python tests/test_dpo_v2.py               # 20 checks: the notebook's real cells with the real TRL DPOTrainer
+```
+
+`test_dpo_v2.py` runs a tiny random model with a real LoRA adapter through the real TRL 1.15 trainer, on synthetic pairs made by the real builder: a full run, a re-run, refused inputs (not SFT v2, mismatched data, a private name, a changed config, a TRL without an anchor), and a simulated Colab disconnect with resume. TRL 1.15 scores tokens with a Triton GPU kernel; the CPU test substitutes the same computation in plain PyTorch. Not covered on CPU: Unsloth itself and the GPU kernel, so the first Colab run is the real test for those.
 
 ## Final result
 

@@ -19,7 +19,7 @@ import types
 import huggingface_hub
 import torch
 from peft import LoraConfig, PeftModel, get_peft_model
-from tokenizers import Tokenizer, decoders, models, pre_tokenizers
+from tokenizers import Tokenizer, decoders, models, normalizers, pre_tokenizers
 from transformers import PreTrainedTokenizerFast, Qwen2Config, Qwen2ForCausalLM
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +36,7 @@ CHATML = (
 def make_tokenizer():
     alphabet = sorted(pre_tokenizers.ByteLevel.alphabet())
     tok = Tokenizer(models.BPE(vocab={ch: i for i, ch in enumerate(alphabet)}, merges=[]))
+    tok.normalizer = normalizers.NFC()  # like NileChat's (Qwen) tokenizer: decomposed letters come back composed
     tok.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=False)
     tok.decoder = decoders.ByteLevel()
     tok.add_special_tokens(["<|endoftext|>", "<|im_start|>", "<|im_end|>"])
@@ -99,9 +100,14 @@ def install_fakes():
     huggingface_hub.login = lambda token=None, **kwargs: None
     getpass.getpass = lambda prompt="": "fake-token"
 
+    kaggle_secrets = types.ModuleType("kaggle_secrets")
+    kaggle_secrets.UserSecretsClient = lambda: types.SimpleNamespace(get_secret=lambda name: "fake-token")
+    sys.modules["kaggle_secrets"] = kaggle_secrets
+
 
 # ---------- synthetic data ----------
 SYSTEM_MESSAGE = "Continue the conversation as Ahmed. Synthetic test data."
+DECOMPOSED_REPLY = "آه تمام"  # "آه تمام" with the آ decomposed
 WORDS = ["تمام", "ماشي", "انت فين", "في الطريق", "ربع ساعة", "عامل ايه", "الحمد لله", "يلا", "[NAME]", "ok", "بكرة"]
 
 
@@ -119,12 +125,16 @@ def make_record(rng, turns, long=False):
     return {"messages": messages}
 
 
-def write_project(drive_root, n_train=60, n_val=12, private_names_count=2, leak_name=None, names_file=True):
-    data_dir = os.path.join(drive_root, "ahmed_twin", "redacted")
+def write_project(drive_root, n_train=60, n_val=12, private_names_count=2, leak_name=None, names_file=True,
+                  data_dir=None):
+    data_dir = data_dir or os.path.join(drive_root, "ahmed_twin", "redacted")
     os.makedirs(data_dir, exist_ok=True)
     rng = random.Random(0)
     train = [make_record(rng, rng.randint(2, 6)) for _ in range(n_train - 1)] + [make_record(rng, 4, long=True)]
     val = [make_record(rng, rng.randint(2, 6)) for _ in range(n_val)]
+    # A reply with a decomposed letter (ا + combining madda, U+0653), as 11 real replies had: the tokenizer
+    # returns it composed (آ), so a character-for-character mask check would wrongly fail.
+    train[5]["messages"][-1]["content"] = DECOMPOSED_REPLY
     if leak_name:
         train[3]["messages"][-1]["content"] = f"قول ل{leak_name} يكلمني"
     for name, records in (("train", train), ("validation", val)):
@@ -150,24 +160,33 @@ SMALL_CONFIG = {
 }
 
 
-def code_cells():
-    with open(NOTEBOOK, encoding="utf-8") as f:
+KAGGLE_NOTEBOOK = os.path.join(HERE, "..", "notebooks", "sft_nilechat_v2_kaggle.ipynb")
+MERGE_NOTEBOOK = os.path.join(HERE, "..", "notebooks", "sft_v2_merge_adapter.ipynb")
+
+
+def code_cells(notebook=NOTEBOOK):
+    with open(notebook, encoding="utf-8") as f:
         notebook = json.load(f)
     return ["".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"]
 
 
-def adapt(source, drive_root):
+def adapt(source, drive_root, replacements=None):
+    """Removes pip installs and the GPU check, and points platform paths at temporary folders."""
+    replacements = {'"/content/drive/MyDrive"': repr(drive_root), **(replacements or {})}
     lines = []
     for line in source.split("\n"):
         if line.lstrip().startswith("!"):
             continue  # pip install
         if "torch.cuda.is_available(), \"No GPU" in line or "torch.cuda.get_device_name" in line:
             continue  # the GPU check
-        lines.append(line.replace('"/content/drive/MyDrive"', repr(drive_root)))
+        for old, new in replacements.items():
+            line = line.replace(old, new)
+        lines.append(line)
     return "\n".join(lines)
 
 
-def run_notebook(drive_root, config_overrides=None, constant_overrides=None, trainer_class=None):
+def run_notebook(drive_root, config_overrides=None, constant_overrides=None, trainer_class=None,
+                 notebook=NOTEBOOK, replacements=None):
     """Executes every code cell in order. Returns (namespace, stdout, exception or None)."""
     namespace = {"__name__": "__main__"}
     stdout = io.StringIO()
@@ -179,12 +198,12 @@ def run_notebook(drive_root, config_overrides=None, constant_overrides=None, tra
         imported.Trainer = trainer_class
     try:
         with contextlib.redirect_stdout(stdout):
-            for source in code_cells():
-                exec(compile(adapt(source, drive_root), "<cell>", "exec"), namespace)
+            for source in code_cells(notebook):
+                exec(compile(adapt(source, drive_root, replacements), "<cell>", "exec"), namespace)
                 if "CONFIG = {" in source:
                     namespace["CONFIG"].update({**SMALL_CONFIG, **(config_overrides or {})})
-                    namespace.update({"MIN_FREE_DRIVE_GB": 0, "MIN_MERGED_MODEL_GB": 0, "MAX_DROPPED_FRACTION": 0.05,
-                                      **(constant_overrides or {})})
+                    namespace.update({"MIN_FREE_DRIVE_GB": 0, "MIN_FREE_DISK_GB": 0, "MIN_MERGED_MODEL_GB": 0,
+                                      "MAX_DROPPED_FRACTION": 0.05, **(constant_overrides or {})})
         return namespace, stdout.getvalue(), None
     except Exception as error:  # the tests check which error, and where
         return namespace, stdout.getvalue(), error
