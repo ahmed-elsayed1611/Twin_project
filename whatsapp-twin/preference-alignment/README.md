@@ -63,11 +63,47 @@ Upload `train.jsonl`, `dev.jsonl`, `test.jsonl` and `manifest.json` from `dpo_v2
 
 ```bash
 pip install -r ../supervised-fine-tuning/tests/requirements-test.txt trl==1.15.0
-python tests/test_build_dpo_pairs_v2.py   # 18 checks: grouping, splits, leaks, refusals
-python tests/test_dpo_v2.py               # 20 checks: the notebook's real cells with the real TRL DPOTrainer
+python tests/test_build_dpo_pairs_v2.py   # 21 checks: grouping, splits, leaks, refusals, shared openings
+python tests/test_dpo_v2.py               # 22 checks: the notebook's real cells with the real TRL DPOTrainer
+python tests/test_dpo_v2_test30.py        # 16 checks: the 30-message blind test notebook
 ```
 
 `test_dpo_v2.py` runs a tiny random model with a real LoRA adapter through the real TRL 1.15 trainer, on synthetic pairs made by the real builder: a full run, a re-run, refused inputs (not SFT v2, mismatched data, a private name, a changed config, a TRL without an anchor), and a simulated Colab disconnect with resume. TRL 1.15 scores tokens with a Triton GPU kernel; the CPU test substitutes the same computation in plain PyTorch. Not covered on CPU: Unsloth itself and the GPU kernel, so the first Colab run is the real test for those.
+
+### v2 result (run `dpo_v2_beta02_sft05`, T4, 2026-10-21)
+
+Pairs: train 1,500 | dev 200 | test 1,629 (88 validation conversations: 11 dev, 77 test), 0 private names, fingerprints equal to SFT v2's `sft_run_summary.json`. Used after the length filter: 1,497 / 200 / 1,616.
+
+| | SFT v2 | DPO v2 |
+|---|---|---|
+| Test preference accuracy (1,616 unseen pairs) | 66.4% | **70.5%** (+4.1 pts) |
+| McNemar (pairs fixed / broken) | | 84 / 17, p ≈ 8e-12 |
+| Real-reply log-prob (dev) | -40.22 | -41.22 (-2.5%: the anchor held) |
+| Wrong-reply log-prob (dev) | -45.59 | -48.90 |
+| Dev loss | 2.007 (step 0) | 1.867 (step 282) |
+| Private names in generations | 0 | 0 |
+
+Anchor: `loss_type=['sigmoid','sft'], loss_weights=[1.0, 0.5]`. All 282 steps ran (3 epochs, no early stop) and the best checkpoint was the last one: the model was still improving. A next run should try `learning_rate=2e-5` under a new `RUN_NAME`.
+
+**30-message blind test** (`notebooks/dpo_v2_test_30_messages.ipynb`: 15 single messages, 15 with earlier context, same seed for both models, `tools/reply_filter.py` on both, A/B shown blind until the user votes). 13 of 30 replies identical; of the rest, a read-through favoured DPO about 8 to 2, mostly on messages with context (it uses what was said before). Both models stay short and generic and sometimes invent facts: a 3B limit, not a DPO one.
+
+### What went wrong on the first Colab runs (and the fix)
+
+| Problem | Cause | Fix |
+|---|---|---|
+| "TRL supports neither loss_type nor rpo_alpha" | Unsloth's `PatchDPOTrainer` replaces `DPOConfig.__init__` with one that hides `loss_type` behind `**kwargs` | Read accepted settings from the dataclass fields, then assert the anchor values really arrived (tests 4.2, 4.3) |
+| "Only 1.50 GB free on Drive" | SFT v2's old checkpoints were in the Trash, which still counts | Empty the Trash (the notebook's space check stopped it safely) |
+| Pairs not found | Uploaded to `dpo_v2/` instead of `dpo_v2/pairs/` | Moved |
+| Colab disconnect at step ~55 | Session ended | Run all again: resumed from `checkpoint-50`, baseline reused |
+| `peft` refused to load in the test notebook | Colab's old `torchao` (0.10) | `pip uninstall torchao` in the install cell |
+| No GPU ("usage limits") | Free daily quota used by training | Ran the test with the second Google account, which owns the shared `ahmed_twin` folder |
+
+### Next improvements (in order)
+1. Chapter 7 evaluation (v1 vs SFT v2 vs DPO v2 on more messages, with a judge) as the fixed yardstick.
+2. Generate several replies and keep the most relevant one (no training).
+3. Data clean-up (merge consecutive messages, split conversations on time gaps) and SFT v3.
+4. DPO round 2: higher learning rate, more pairs, the model's own bad replies as negatives.
+5. RAG memory for facts; a 7B model with QLoRA.
 
 ## Final result
 
