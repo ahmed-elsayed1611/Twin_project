@@ -66,7 +66,9 @@ def rag(query: str) -> str:
     opik_context.update_current_trace(
         tags=["rag"],
         metadata={
-            "model_id": settings.HF_MODEL_ID,
+            "model_id": settings.OPENAI_MODEL_ID
+            if settings.LLM_INFERENCE_BACKEND == "openai_compatible"
+            else settings.HF_MODEL_ID,
             "embedding_model_id": settings.TEXT_EMBEDDING_MODEL_ID,
             "temperature": settings.TEMPERATURE_INFERENCE,
             "query_tokens": misc.compute_num_tokens(query),
