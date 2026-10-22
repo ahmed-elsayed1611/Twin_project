@@ -11,7 +11,7 @@ from llm_engineering.application.rag.retriever import ContextRetriever
 from llm_engineering.application.utils import misc
 from llm_engineering.domain.embedded_chunks import EmbeddedChunk
 from llm_engineering.infrastructure.opik_utils import configure_opik
-from llm_engineering.model.inference import InferenceExecutor, LLMInferenceSagemakerEndpoint
+from llm_engineering.model.inference import InferenceExecutor, LLMInferenceOpenAICompatible, LLMInferenceSagemakerEndpoint
 
 configure_opik()
 
@@ -39,9 +39,12 @@ def get_retriever() -> ContextRetriever:
 
 @opik.track
 def call_llm_service(query: str, context: str | None) -> str:
-    llm = LLMInferenceSagemakerEndpoint(
-        endpoint_name=settings.SAGEMAKER_ENDPOINT_INFERENCE, inference_component_name=None
-    )
+    if settings.LLM_INFERENCE_BACKEND == "openai_compatible":
+        llm = LLMInferenceOpenAICompatible()
+    else:
+        llm = LLMInferenceSagemakerEndpoint(
+            endpoint_name=settings.SAGEMAKER_ENDPOINT_INFERENCE, inference_component_name=None
+        )
     answer = InferenceExecutor(llm, query, context).execute()
 
     return answer

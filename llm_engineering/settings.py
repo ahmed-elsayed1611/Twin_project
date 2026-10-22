@@ -72,6 +72,9 @@ class Settings(BaseSettings):
 
     SAGEMAKER_ENDPOINT_CONFIG_INFERENCE: str = "twin"
     SAGEMAKER_ENDPOINT_INFERENCE: str = "twin"
+    # "sagemaker": the deployed fine-tuned twin. "openai_compatible": OPENAI_MODEL_ID via OPENAI_BASE_URL (OpenAI,
+    # Cerebras, ...), to run the RAG pipeline before the twin is deployed.
+    LLM_INFERENCE_BACKEND: str = "sagemaker"
     TEMPERATURE_INFERENCE: float = 0.01
     TOP_P_INFERENCE: float = 0.9
     # 150 tokens (about 110 words) cut LinkedIn posts off mid-sentence. 600 still fits the endpoint:
