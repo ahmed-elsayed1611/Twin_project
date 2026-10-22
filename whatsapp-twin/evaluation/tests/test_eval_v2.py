@@ -161,6 +161,18 @@ check("5.2 a half-written last line is dropped and the run continues",
       and all(json.loads(line) for line in (eval_dir(project) / "outputs_dpo_v2_private.jsonl").read_text(encoding="utf-8").splitlines()),
       repr(error5b))
 
+# 5c. Finishing the run from an account that cannot see the v1 models (their answers are already saved)
+import shutil  # noqa: E402
+
+shutil.rmtree(project / "model_merged_nilechat")
+shutil.rmtree(Path(drive) / "DPO")
+judge_file5 = eval_dir(project) / f"judge_{ns['JUDGE_TAG']}_private.jsonl"
+judge_file5.unlink()   # as if the judge had not run yet
+ns5c, out5c, error5c = run(drive)
+check("5.3 saved answers stand in for models this account cannot see",
+      error5c is None and set(ns5c["ACTIVE"]) == {"sft_v1", "dpo_v1", "sft_v2", "dpo_v2"}
+      and "model not visible from this account" in out5c and ns5c["JUDGE"]["Q2 sense"]["n"] == fair, repr(error5c))
+
 # 6. Without the v1 models
 drive6, project6, _ = make_drive(v1=False)
 ns6, out6, error6 = run(drive6)
