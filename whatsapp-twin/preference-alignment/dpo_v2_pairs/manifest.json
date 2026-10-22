@@ -1,0 +1,105 @@
+{
+  "builder_version": 2,
+  "source": {
+    "train_sha256": "213b5ae6b3b7f1b0858b407a5bff5c7bc96f882b4786587887dbe07d76cbee3d",
+    "validation_sha256": "abdc1f073245917bf771ee22ff40d2a334717c5eda4f756054e9e86141cccf85",
+    "redacted": true,
+    "private_names_count": 76
+  },
+  "settings": {
+    "max_similarity": 0.5,
+    "max_prompt_similarity": 0.5,
+    "train_pairs": 1500,
+    "dev_pairs": 200,
+    "seed": 0,
+    "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+    "min_candidate_len": 15,
+    "min_arabic_char_ratio": 0.5,
+    "length_ratio_bands": [
+      [
+        0.4,
+        2.5
+      ],
+      [
+        0.25,
+        4.0
+      ],
+      [
+        0.15,
+        6.5
+      ]
+    ]
+  },
+  "split": {
+    "validation_conversations": 88,
+    "dev_conversations": 11,
+    "test_conversations": 77
+  },
+  "counts": {
+    "train": 1500,
+    "dev": 200,
+    "test": 1629
+  },
+  "prompt_overlap_removed": {
+    "dev": 0,
+    "test": 1
+  },
+  "stats": {
+    "train": {
+      "exchanges": 24890,
+      "negative_pool": 17937,
+      "pool_dropped": {
+        "too_short": 5727,
+        "not_arabic": 329
+      },
+      "pairs": 1500,
+      "skipped": {
+        "no_candidate_in_length_bands": 13,
+        "candidates_too_similar_to_chosen": 2,
+        "candidates_too_similar_to_last_message": 2
+      },
+      "mean_chars_chosen": 36.0,
+      "mean_chars_rejected": 33.2,
+      "mean_similarity": 0.303,
+      "max_similarity": 0.5,
+      "mean_prompt_similarity": 0.304
+    },
+    "dev": {
+      "exchanges": 413,
+      "negative_pool": 297,
+      "pool_dropped": {
+        "too_short": 112,
+        "not_arabic": 3
+      },
+      "pairs": 200,
+      "skipped": {
+        "no_candidate_in_length_bands": 1
+      },
+      "mean_chars_chosen": 32.1,
+      "mean_chars_rejected": 31.3,
+      "mean_similarity": 0.292,
+      "max_similarity": 0.498,
+      "mean_prompt_similarity": 0.289
+    },
+    "test": {
+      "exchanges": 1657,
+      "negative_pool": 1088,
+      "pool_dropped": {
+        "too_short": 530,
+        "not_arabic": 28
+      },
+      "pairs": 1630,
+      "skipped": {
+        "candidates_too_similar_to_chosen": 5,
+        "no_candidate_in_length_bands": 20,
+        "candidates_too_similar_to_last_message": 2
+      },
+      "mean_chars_chosen": 31.4,
+      "mean_chars_rejected": 30.8,
+      "mean_similarity": 0.311,
+      "max_similarity": 0.5,
+      "mean_prompt_similarity": 0.305
+    }
+  },
+  "private_name_check": "0 pairs with a listed name"
+}

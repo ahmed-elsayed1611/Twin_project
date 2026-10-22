@@ -6,6 +6,25 @@ Evaluates the final models of the Ahmed Twin project, the **SFT** model ([superv
 
 Follows the evaluation chapter of the [*LLM Engineer's Handbook*](https://github.com/PacktPublishing/LLM-Engineers-Handbook), adapted to a personal Egyptian-Arabic chat model.
 
+## Version 2: `notebooks/evaluation_v2.ipynb`
+
+Evaluates the v2 pipeline (redacted data, SFT on the final reply only, DPO v2) against v1, and answers four questions: did DPO v2 improve on SFT v2; is v2 better than the old final model (`dpo_v7_rpo`); is it safe to show; how far is it from a real person. The v1 notebook below and its results are unchanged.
+
+| | v1 notebook | v2 notebook |
+|---|---|---|
+| Systems | SFT v1, DPO v7 | SFT v1, DPO v1 (v7), SFT v2, DPO v2; v1 optional |
+| Test conversations | `validation.jsonl`, minus DPO dev | DPO v2's **test** split (unseen by every v2 stage), **minus anything found in v1's `train.jsonl`** (a name-, placeholder- and digit-insensitive match) |
+| Fairness to v1 | — | v1 is compared only on conversations without `[NAME]`-style placeholders, which it never saw |
+| Decoding | Greedy | The deployed one (temperature 0.4 + `tools/reply_filter.py`), **same seed per conversation for every system** |
+| Judge | `gpt-oss-120b` over an API (anonymized excerpts leave Colab) | **Local** Qwen3-8B (4-bit) on the Colab GPU: **nothing leaves the runtime** |
+| How the judge answers | Writes A / B / TIE, parsed | Its probabilities for A and B are read (one forward pass, no parsing); both orders, a win needs both |
+| Judge validity | Swap consistency only | **Calibration gate**: it must prefer the real reply over a hard negative in ≥ 65% of conversations, or its verdicts are reported but not used; optional blind human check measures judge-human agreement |
+| Judge questions | Closer to the real reply | **sense** (better next message, no reference) and **like** (closer to the real reply) |
+| Statistics | Sign tests | Sign / McNemar tests, Wilson intervals, **Holm correction** per question |
+| Outputs | `eval_summary.json` with real text | `eval_summary.json` **numbers only** (checked), real text only in `*_private*` files |
+
+How it was designed: three rounds, each fixing the previous one's weaknesses (the table is in the notebook's introduction). CPU test: `python tests/test_eval_v2.py` (19 checks: v1 leakage with redacted names, all systems complete, fair subset, calibration gate, resume without regenerating, refused setting changes, missing v1, judge off, a dead adapter, the votes).
+
 ## Evaluation design
 
 Three independent kinds of evidence, all **paired** (both models answer the same conversations) and all with **significance tests**:

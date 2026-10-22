@@ -7,6 +7,7 @@ Shared by every chapter. Run them from the repository root.
 | `check_private_names.py` | Scans files and folders, **including notebook outputs**, for the real names in `private_names.txt`. Exit code 1 if any are found. |
 | `private_names_lib.py` | The matching rules used everywhere (the evaluation notebook embeds the same logic): whole-word matching with the attached prefixes و / ب / ل, so a short name never matches inside a longer everyday word. |
 | `check_notebook_order.py` | Walks a notebook's code cells in top-to-bottom execution order and flags any name used before a cell defines it. This is the kind of bug that only shows up on a fresh run. |
+| `reply_filter.py` | The output filter for generated replies: removes redaction placeholders (`[NAME]`, and the `يا` before it), rejects private names, long numbers and loops, generates again, and after a few tries answers with a natural deflection. Standard library only; notebooks embed it unchanged (their tests check this). Tests: `python -m unittest discover -s tools/tests` |
 
 ## Before every push
 ```bash

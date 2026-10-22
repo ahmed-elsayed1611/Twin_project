@@ -42,6 +42,8 @@ Each of these came from reading real output, not from a plan made in advance.
 - **A wrong adapter was evaluated without any error.** An earlier evaluation silently loaded an outdated adapter. The notebook now verifies the adapter three ways before it generates anything.
 - **A domain-matched base model beat a general one.** NileChat-3B, pretrained on Egyptian dialect, reached a lower validation loss than Qwen2.5-3B in about half the steps.
 - **Splitting by sample would have leaked.** Sliding context windows overlap, so whole sessions are assigned to train or validation.
+- **Names inside messages reached the model.** Only sender labels were anonymised: 24.1% of training samples contained a private name, and the v1 SFT loss counted every token, so the model learned to write them (23 of 150 evaluation replies, against 10 in my real ones). The builder now redacts listed names as whole words (`--redact-names-file`, 0 left), and [SFT v2](supervised-fine-tuning#version-2-notebookssft_nilechat_v2ipynb) trains on the final reply only. [DPO v2](preference-alignment#version-2-dpo-on-top-of-sft-v2) follows on the same redacted data, and refuses pairs that were not built from the exact files SFT v2 trained on.
+- **A library update would have silently removed a fix.** TRL 1.15 dropped `rpo_alpha`, the anchor that stopped DPO from making my real replies less likely; the v1 notebook would have fallen back to plain DPO. DPO v2 uses the new API for the same loss and refuses to run without it.
 
 ## Structure
 

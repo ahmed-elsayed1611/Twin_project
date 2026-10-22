@@ -121,6 +121,39 @@ class WhatsAppDatasetBuilderTests(unittest.TestCase):
         self.assertNotIn("Example12345678", sample_text)
         self.assertIn("[CREDENTIAL]", sample_text)
 
+    def test_private_names_are_redacted_as_whole_words(self):
+        # Names inside messages used to reach the training files (only the sender label became
+        # "Contact"). A short name must be replaced as a whole word, with its و/ب/ل prefix kept,
+        # and must not damage a longer everyday word that contains it ("علي" inside "عليك").
+        output_dir, audit = self.build_from_text(
+            "22/3/2023, 10:00 AM - Contact: قابلت زكريا وعلي امبارح والسلام عليك من Mona\n"
+            "22/3/2023, 10:02 AM - Ahmed: سلملي على زكريا\n",
+            private_names=["زكريا", "علي", "Mona"],
+        )
+        sample_text = (output_dir / "all_samples.json").read_text(encoding="utf-8")
+        train_text = (output_dir / "train.jsonl").read_text(encoding="utf-8") + (
+            output_dir / "validation.jsonl"
+        ).read_text(encoding="utf-8")
+        for text in (sample_text, train_text):
+            self.assertNotIn("زكريا", text)
+            self.assertNotIn("Mona", text)
+            self.assertIn("و[NAME]", text)
+            self.assertIn("عليك", text)
+        self.assertEqual(audit["pii_redactions"]["NAME"], 4)
+        self.assertEqual(audit["config"]["private_names_count"], 3)
+        self.assertNotIn("زكريا", json.dumps(audit, ensure_ascii=False))
+
+    def test_six_and_seven_digit_numbers_are_redacted(self):
+        output_dir, _ = self.build_from_text(
+            "22/3/2023, 10:00 AM - Contact: الكود 482913 والطلب ١٢٣٤٥٦٧ والسعر 12.5\n"
+            "22/3/2023, 10:02 AM - Ahmed: تمام\n"
+        )
+        sample_text = (output_dir / "all_samples.json").read_text(encoding="utf-8")
+        self.assertNotIn("482913", sample_text)
+        self.assertNotIn("١٢٣٤٥٦٧", sample_text)
+        self.assertEqual(sample_text.count("[NUMBER]"), 2)
+        self.assertIn("12.5", sample_text)
+
     def test_duplicate_responses_are_capped(self):
         # Regression test: real chat data has hundreds of exact-duplicate
         # short acknowledgements ("اه", "تمام", ...) with different context
