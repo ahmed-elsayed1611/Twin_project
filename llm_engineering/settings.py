@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     # OpenAI API
     OPENAI_MODEL_ID: str = "gpt-4o-mini"
     OPENAI_API_KEY: str | None = None
+    # Any OpenAI-compatible provider, e.g. Cerebras: "https://api.cerebras.ai/v1" (then use its model id and key).
+    OPENAI_BASE_URL: str | None = None
 
     # Huggingface API
     HUGGINGFACE_ACCESS_TOKEN: str | None = None
