@@ -16,7 +16,7 @@ Evaluates the v2 pipeline (redacted data, SFT on the final reply only, DPO v2) a
 | Test conversations | `validation.jsonl`, minus DPO dev | DPO v2's **test** split (unseen by every v2 stage), **minus anything found in v1's `train.jsonl`** (a name-, placeholder- and digit-insensitive match) |
 | Fairness to v1 | — | v1 is compared only on conversations without `[NAME]`-style placeholders, which it never saw |
 | Decoding | Greedy | The deployed one (temperature 0.4 + `tools/reply_filter.py`), **same seed per conversation for every system** |
-| Judge | `gpt-oss-120b` over an API (anonymized excerpts leave Colab) | **Local** Qwen3-14B (4-bit) on the Colab GPU: **nothing leaves the runtime** |
+| Judge | `gpt-oss-120b` over an API (anonymized excerpts leave Colab) | **Local** Qwen3-8B (4-bit) on the Colab GPU: **nothing leaves the runtime** |
 | How the judge answers | Writes A / B / TIE, parsed | Its probabilities for A and B are read (one forward pass, no parsing); both orders, a win needs both |
 | Judge validity | Swap consistency only | **Calibration gate**: it must prefer the real reply over a hard negative in ≥ 65% of conversations, or its verdicts are reported but not used; optional blind human check measures judge-human agreement |
 | Judge questions | Closer to the real reply | **sense** (better next message, no reference) and **like** (closer to the real reply) |

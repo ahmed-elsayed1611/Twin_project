@@ -31,7 +31,7 @@ make_base().save_pretrained(JUDGE_DIR)
 TOKENIZER.save_pretrained(JUDGE_DIR)
 SMALL = {"N_EVAL = 200": "N_EVAL = 16", "N_PREFERENCE_PAIRS = 600": "N_PREFERENCE_PAIRS = 12",
          "max_new_tokens=60": "max_new_tokens=6", "HUMAN_CHECK_SIZE = 30": "HUMAN_CHECK_SIZE = 4",
-         '"unsloth/Qwen3-14B-unsloth-bnb-4bit"': repr(str(JUDGE_DIR))}
+         '"unsloth/Qwen3-8B-unsloth-bnb-4bit"': repr(str(JUDGE_DIR))}
 PLANTED = 3
 RESULTS = []
 
