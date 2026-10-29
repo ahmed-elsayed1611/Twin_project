@@ -11,7 +11,12 @@ from llm_engineering.application.rag.retriever import ContextRetriever
 from llm_engineering.application.utils import misc
 from llm_engineering.domain.embedded_chunks import EmbeddedChunk
 from llm_engineering.infrastructure.opik_utils import configure_opik
-from llm_engineering.model.inference import InferenceExecutor, LLMInferenceOpenAICompatible, LLMInferenceSagemakerEndpoint
+from llm_engineering.model.inference import (
+    InferenceExecutor,
+    LLMInferenceOpenAICompatible,
+    LLMInferenceSagemakerEndpoint,
+    TwinReplyExecutor,
+)
 
 configure_opik()
 
@@ -28,6 +33,14 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
+
+
+class ReplyRequest(BaseModel):
+    message: str
+
+
+class ReplyResponse(BaseModel):
+    reply: str
 
 
 @cache
@@ -93,3 +106,24 @@ def rag_endpoint(request: QueryRequest):
         logger.exception("The RAG request failed.")
 
         raise HTTPException(status_code=500, detail="Internal error while answering the query.") from e
+
+
+@opik.track
+def twin_reply(message: str) -> str:
+    """My WhatsApp twin's reply. No retrieval: the twin was fine-tuned on conversations, not on RAG context."""
+
+    llm = LLMInferenceSagemakerEndpoint(
+        endpoint_name=settings.SAGEMAKER_ENDPOINT_INFERENCE, inference_component_name=None
+    )
+
+    return TwinReplyExecutor(llm, message).execute()
+
+
+@app.post("/reply", response_model=ReplyResponse)
+def reply_endpoint(request: ReplyRequest):
+    try:
+        return {"reply": twin_reply(message=request.message)}
+    except Exception as e:
+        logger.exception("The reply request failed.")
+
+        raise HTTPException(status_code=500, detail="Internal error while replying.") from e
