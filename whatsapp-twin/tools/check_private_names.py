@@ -7,7 +7,7 @@ Exits with code 1 if any private name is found, so it also works as a git pre-pu
 Scans text files (.py .md .ipynb .json .jsonl .txt .csv .yaml .yml .cfg .toml .sh). For notebooks,
 both cell sources and saved outputs are scanned -- outputs are the usual way names leak.
 """
-import argparse, json, os, sys
+import argparse, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from private_names_lib import load_private_names, compile_name_patterns, find_private_names
 

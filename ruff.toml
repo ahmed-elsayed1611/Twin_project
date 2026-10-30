@@ -3,7 +3,10 @@ target-version = "py311"
 extend-exclude = [
     ".github",
     "graphql_client",
-    "graphql_schemas"
+    "graphql_schemas",
+    # A separate sub-project (research scripts, notebook test harnesses that print on purpose) with its own workflow,
+    # .github/workflows/whatsapp-twin-tests.yaml, which checks it for real bugs (pyflakes) instead of this style.
+    "whatsapp-twin"
 ]
 
 [lint]

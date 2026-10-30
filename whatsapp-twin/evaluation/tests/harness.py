@@ -1,4 +1,4 @@
-import json, os, sys, types, re, random, tempfile, shutil, builtins
+import json, os, sys, types, re, random, tempfile, shutil, builtins  # noqa: F401 (re-exported to `from harness import *`)
 import torch
 from transformers import Qwen2Config, Qwen2ForCausalLM, BatchEncoding
 from peft import LoraConfig, get_peft_model
@@ -68,7 +68,7 @@ class FakeJudge:
         if any(f"[[{i}]]" in p for i in FakeJudge.fail_ids):
             raise RuntimeError("Error code: 429 - rate limit")
         a = re.search(r"CANDIDATE A: (.*?)\n\nCANDIDATE B", p, re.S).group(1)
-        b = re.search(r"CANDIDATE B: (.*?)\n\nAnswer:", p, re.S).group(1)
+        _b = re.search(r"CANDIDATE B: (.*?)\n\nAnswer:", p, re.S).group(1)  # unused: only checks B is in the prompt
         dpo_texts = FakeJudge.dpo_texts
         rnd = random.Random(hash(p) % 1000)
         if FakeJudge.mode == "prefers_dpo":
