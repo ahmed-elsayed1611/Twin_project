@@ -1,6 +1,4 @@
-import pytest
-from datetime import datetime, timedelta
-from llm_engineering.application.dataset.whatsapp_extractor import WhatsAppExtractor, ConversationTurn
+from llm_engineering.application.dataset.whatsapp_extractor import WhatsAppExtractor
 
 def test_time_gap_detection(tmp_path):
     # Setup extractor with 1 hour max gap
