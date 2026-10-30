@@ -1,4 +1,6 @@
-FROM python:3.11-slim-bullseye AS release
+# Debian 12 (bookworm). Debian 11 (bullseye) is end-of-life: its security packages moved and apt-get failed with
+# 404, which broke every CD build (30 Oct 2026).
+FROM python:3.11-slim-bookworm AS release
 
 ENV WORKSPACE_ROOT=/app/
 ENV PYTHONDONTWRITEBYTECODE=1
