@@ -49,6 +49,9 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.AWS_ECR_NAME }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.AWS_ECR_NAME }}:latest
           push: true
+          # One plain image per push. With provenance on, buildx also pushes an index and an attestation as untagged
+          # ECR entries, and the "keep the newest 3 images" lifecycle rule could expire parts of the current image.
+          provenance: false
           # Reuse unchanged layers (system packages, Python dependencies) from the previous build.
           cache-from: type=gha
           cache-to: type=gha,mode=max
