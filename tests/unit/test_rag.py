@@ -265,12 +265,30 @@ def test_tokenizer_is_loaded_once() -> None:  # 9.15
             return text.split()
 
     misc._get_tokenizer.cache_clear()
-    with mock.patch.object(misc.AutoTokenizer, "from_pretrained", return_value=_Tokenizer()) as from_pretrained:
+    with (
+        mock.patch.object(settings, "LLM_INFERENCE_BACKEND", "sagemaker"),
+        mock.patch.object(misc.AutoTokenizer, "from_pretrained", return_value=_Tokenizer()) as from_pretrained,
+    ):
         counts = [misc.compute_num_tokens("one two three") for _ in range(3)]
     misc._get_tokenizer.cache_clear()
 
     assert counts == [3, 3, 3]
     assert from_pretrained.call_count == 1
+
+
+def test_openai_compatible_backend_counts_with_tiktoken() -> None:
+    # The answering model is behind an OpenAI-style API, so HF_MODEL_ID (my private twin) must not be downloaded.
+    misc._get_tokenizer.cache_clear()
+    with (
+        mock.patch.object(settings, "LLM_INFERENCE_BACKEND", "openai_compatible"),
+        mock.patch.object(settings, "OPENAI_MODEL_ID", "gpt-oss-120b"),
+        mock.patch.object(misc.AutoTokenizer, "from_pretrained") as from_pretrained,
+    ):
+        count = misc.compute_num_tokens("one two three")
+    misc._get_tokenizer.cache_clear()
+
+    assert count == 3
+    from_pretrained.assert_not_called()
 
 
 def test_error_details_stay_on_the_server(api) -> None:  # 9.10

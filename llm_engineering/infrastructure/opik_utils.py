@@ -19,7 +19,15 @@ def configure_opik() -> None:
         os.environ["OPIK_PROJECT_NAME"] = settings.COMET_PROJECT
 
         try:
-            opik.configure(api_key=settings.COMET_API_KEY, workspace=default_workspace, use_local=False, force=True)
+            # opik >= 1.0 stores its own project name from configure(), and that wins over OPIK_PROJECT_NAME: without
+            # project_name every trace went to the account's default project (30 Oct).
+            opik.configure(
+                api_key=settings.COMET_API_KEY,
+                workspace=default_workspace,
+                project_name=settings.COMET_PROJECT,
+                use_local=False,
+                force=True,
+            )
         except Exception as error:  # monitoring must never stop the application
             logger.warning(f"Opik could not be configured ({error}). Continuing without prompt monitoring.")
             os.environ["OPIK_TRACK_DISABLE"] = "true"  # otherwise every @opik.track call retries sending traces
