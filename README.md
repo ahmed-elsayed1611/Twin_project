@@ -23,6 +23,7 @@ A raw WhatsApp export becomes a 3B-parameter chat model that replies the way I d
 | [Supervised fine-tuning](whatsapp-twin/supervised-fine-tuning) | LoRA fine-tuning of NileChat-3B on multi-turn chat data | Best validation loss 1.625, against 1.734 for Qwen2.5-3B |
 | [Preference alignment](whatsapp-twin/preference-alignment) | DPO with hard negatives mined from my own real replies | Held-out preference accuracy 68.7% → 71.3% (paired McNemar, p ≈ 0.02–0.04) |
 | [Evaluation](whatsapp-twin/evaluation) | SFT vs. DPO on 150 unseen conversations, with an LLM judge run in both A/B orders | Judge prefers DPO in 71% of decided pairs (p = 0.0003) |
+| [Deployment](#deployment-and-monitoring) | The DPO model on a SageMaker CPU endpoint behind `POST /reply`, with CI/CD and Opik tracing | Serves the twin without a GPU quota |
 
 Three things I would point an interviewer to:
 
@@ -96,7 +97,8 @@ Serves the fine-tuned model behind an API, using RAG at query time — embedding
 | Training infra | AWS SageMaker (book), Google Colab T4 (WhatsApp Twin) |
 | Model & fine-tuning | Hugging Face, TRL, PEFT, Unsloth |
 | RAG / retrieval | LangChain |
-| Serving | FastAPI |
+| Serving | FastAPI, AWS SageMaker (CPU endpoint) |
+| CI/CD | GitHub Actions, Docker, Amazon ECR |
 
 ## Design principles
 
@@ -115,13 +117,15 @@ This project is still in progress.
 | Supervised fine-tuning | Done — my own implementation |
 | Preference alignment | Done — my own implementation |
 | Evaluation | Done — my own implementation |
-| RAG inference pipeline | In progress |
-| Inference pipeline deployment | In progress |
-| MLOps and LLMOps | In progress |
+| RAG inference pipeline | Studied, run, and fixed (see below) |
+| Inference pipeline deployment | Done: my DPO twin on a SageMaker CPU endpoint behind `POST /reply` |
+| MLOps and LLMOps | Done: CI (lint, format, secret scan, tests), CD (Docker image to Amazon ECR), Opik tracing |
+| RAG quality | In progress: evaluation set (recall@5, MRR), hybrid search, query latency |
 
-### Planned contributions
-- Streamlit UI for interacting with the twin
-- RAG evaluation metrics
+### Next
+- A retrieval evaluation set, so every RAG change is measured instead of guessed
+- Hybrid search (BM25 + dense vectors, merged with reciprocal rank fusion)
+- Cut the 61-second self-query step that Opik traces showed as the main source of latency
 
 ## What I changed in the book's code (data collection and RAG feature pipeline)
 
@@ -150,6 +154,26 @@ I ran the pipelines, checked the data in MongoDB and Qdrant, and fixed what I fo
 - Crawlers declare their own domain and are registered automatically. The switched-off LinkedIn crawler fails before starting Chrome.
 - The active settings are printed at start-up, because a value in `.env` silently overrides the code's default.
 - On a local ZenML server, set `export ZENML_STORE_HTTP_TIMEOUT=300`: the server resets its timeout to 30 seconds on every start, which long steps exceed.
+
+## What I changed in the RAG inference pipeline
+
+Each fix has a unit test in `tests/unit/test_rag.py`.
+
+- **Self-query** never creates users, accepts any spelling of "none", asks the LLM for names only, and sends only the question.
+- **Query expansion and search**: rewrites are checked, `k` is applied per collection, and the LLM steps run in parallel.
+- **Qdrant** errors other than a missing collection are raised instead of returning empty results.
+- **Reranker**: a strict `zip` (no silently dropped results), and the model loads on first use.
+- **API**: no model call when nothing was retrieved, no internal error details in responses, one shared retriever, and a cached tokenizer.
+- **Generation** uses the same prompt template the model was trained on, with room for 600 new tokens.
+- **Any OpenAI-compatible provider** (`OPENAI_BASE_URL`, `LLM_INFERENCE_BACKEND`), so the RAG service runs before the twin is deployed.
+
+## Deployment and monitoring
+
+**Serving my twin on AWS SageMaker.** My account has no GPU quota, so the DPO twin runs on Hugging Face's CPU inference container on `ml.m5.2xlarge` with one model-server worker (eight workers ran out of memory). The book's GPU path stays behind `DEPLOYMENT_TARGET=gpu`. `POST /reply` uses the training prompt (ChatML and my system message) and stops at `<|im_end|>`. The endpoint is deleted after every session, because it bills by the hour.
+
+**CI/CD with GitHub Actions.** Every pull request runs a secret scan (gitleaks), lint and format checks (ruff), and the tests. Every merge into `main` builds the Docker image and pushes it to Amazon ECR, using an IAM user that can only push to that one repository.
+
+**Monitoring with Opik.** Every RAG request is traced step by step. Getting traces to arrive at all took two fixes: the old client created trace timestamps in the year 2202, which the server rejected, and the project name had to be passed in code. The traces then showed that one step, the self-query LLM call, took about 61 seconds.
 
 ## Credits
 

@@ -1,6 +1,6 @@
 # WhatsApp Twin — fine-tuning a personal Egyptian-Arabic chat model
 
-This folder is my own work on top of the [book's system](../README.md): a raw WhatsApp export becomes a 3B-parameter chat model that replies the way I do, in Egyptian Arabic. It covers data preparation, supervised fine-tuning (SFT), preference alignment (DPO), and a paired, significance-tested evaluation.
+This folder is my own work on top of the [book's system](../README.md): a raw WhatsApp export becomes a 3B-parameter chat model that replies the way I do, in Egyptian Arabic. It covers data preparation, supervised fine-tuning (SFT), preference alignment (DPO), a paired, significance-tested evaluation, and deployment of the final model on AWS SageMaker.
 
 The *LLM Engineer's Handbook* builds its twin from public articles and code. I replaced that with a real private conversation, which changed almost every decision after data collection.
 
@@ -12,6 +12,7 @@ The *LLM Engineer's Handbook* builds its twin from public articles and code. I r
 | [Supervised fine-tuning](supervised-fine-tuning) | LoRA fine-tuning of NileChat-3B on multi-turn chat data | Best validation loss 1.625, against 1.734 for Qwen2.5-3B. Stopped at checkpoint-1000, before overfitting |
 | [Preference alignment](preference-alignment) | DPO with hard negatives mined from my own real replies, in a self-diagnosing notebook | Held-out preference accuracy 68.7% → 71.3% on 300 test pairs (paired McNemar, p ≈ 0.02–0.04) |
 | [Evaluation](evaluation) | SFT vs. DPO on 150 unseen conversations: likelihood, automatic checks, and an LLM judge run in both A/B orders | Judge prefers DPO in 71% of decided pairs (p = 0.0003). DPO's median reply length is 29 characters against 48 for SFT; my real replies are 19.5 |
+| [Deployment](../README.md#deployment-and-monitoring) | The DPO model, kept private on the Hugging Face Hub, served from a SageMaker CPU endpoint behind `POST /reply`, with the same prompt format as training | Runs on `ml.m5.2xlarge` without a GPU quota. One model-server worker, because eight ran out of memory |
 
 **One result goes the other way, and it is reported, not hidden:** DPO slightly lowers the likelihood of my exact words (perplexity 14.9 → 15.5, p < 0.0001). The two primary metrics disagree because they measure different things. The [evaluation write-up](evaluation#interpretation) explains why DPO is still the final model.
 
@@ -28,9 +29,11 @@ flowchart LR
     D --> G[Evaluation<br/>SFT vs. DPO]
     F --> G
     C --> G
+    G --> H[Private model<br/>Hugging Face Hub]
+    H --> I[SageMaker CPU endpoint<br/>POST /reply]
 ```
 
-Data preparation and the hard-negative builder run locally on CPU. Training and evaluation run on Google Colab (T4).
+Data preparation and the hard-negative builder run locally on CPU. Training and evaluation run on Google Colab (T4). The deployment code lives with the book's inference code in [`llm_engineering/`](../llm_engineering), because the twin replaces the book's model there.
 
 ## Decisions that came from the data
 
@@ -101,7 +104,7 @@ The training data is a real private conversation, so this work is built around k
 
 ## Tech stack
 
-Python · PyTorch · Hugging Face Transformers, PEFT, TRL, Datasets · Unsloth · LoRA · DPO · sentence-transformers · Google Colab (T4) · OpenAI-compatible judge API (Cerebras) · ZenML and Pydantic (prototype)
+Python · PyTorch · Hugging Face Transformers, PEFT, TRL, Datasets · Unsloth · LoRA · DPO · sentence-transformers · Google Colab (T4) · OpenAI-compatible judge API (Cerebras) · ZenML and Pydantic (prototype) · AWS SageMaker, FastAPI (serving)
 
 ## Limitations
 
