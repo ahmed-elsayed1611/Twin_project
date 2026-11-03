@@ -16,11 +16,7 @@ def load_to_vector_db(
     for document_class, documents in grouped_documents.items():
         logger.info(f"Loading documents into {document_class.get_collection_name()}")
         for documents_batch in utils.misc.batch(documents, size=4):
-            try:
-                document_class.bulk_insert(documents_batch)
-            except Exception:
-                logger.error(f"Failed to insert documents into {document_class.get_collection_name()}")
-
-                return False
+            if not document_class.bulk_insert(documents_batch):
+                raise RuntimeError(f"Failed to insert documents into {document_class.get_collection_name()}")
 
     return True

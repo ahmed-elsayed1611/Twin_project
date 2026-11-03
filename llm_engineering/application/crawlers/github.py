@@ -12,6 +12,7 @@ from .base import BaseCrawler
 
 class GithubCrawler(BaseCrawler):
     model = RepositoryDocument
+    domain = "https://github.com"
 
     def __init__(self, ignore=(".git", ".toml", ".lock", ".png")) -> None:
         super().__init__()
@@ -47,7 +48,8 @@ class GithubCrawler(BaseCrawler):
                         continue
                     file_path = os.path.join(dir, file)  # noqa: PTH118
                     with open(os.path.join(root, file), "r", errors="ignore") as f:  # noqa: PTH123, PTH118
-                        tree[file_path] = f.read().replace(" ", "")
+                        # Stored as it is: removing spaces turned "import os" into "importos".
+                        tree[file_path] = f.read()
 
             user = kwargs["user"]
             instance = self.model(

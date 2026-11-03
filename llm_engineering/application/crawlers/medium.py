@@ -8,6 +8,7 @@ from .base import BaseSeleniumCrawler
 
 class MediumCrawler(BaseSeleniumCrawler):
     model = ArticleDocument
+    domain = "https://medium.com"
 
     def set_extra_driver_options(self, options) -> None:
         options.add_argument(r"--profile-directory=Profile 2")
@@ -27,6 +28,11 @@ class MediumCrawler(BaseSeleniumCrawler):
         soup = BeautifulSoup(self.driver.page_source, "html.parser")
         title = soup.find_all("h1", class_="pw-post-title")
         subtitle = soup.find_all("h2", class_="pw-subtitle-paragraph")
+        # These selectors depend on Medium's CSS class names; warn when they stop matching.
+        if not title:
+            logger.warning(f"No title found (Medium may have renamed 'pw-post-title'): {link}")
+        if not subtitle:
+            logger.warning(f"No subtitle found (Medium may have renamed 'pw-subtitle-paragraph'): {link}")
 
         data = {
             "Title": title[0].string if title else None,

@@ -14,8 +14,10 @@ def chunk_and_embed(
     metadata = {"chunking": {}, "embedding": {}, "num_documents": len(cleaned_documents)}
 
     embedded_chunks = []
+    num_chunks = 0
     for document in cleaned_documents:
         chunks = ChunkingDispatcher.dispatch(document)
+        num_chunks += len(chunks)
         metadata["chunking"] = _add_chunks_metadata(chunks, metadata["chunking"])
 
         for batched_chunks in utils.misc.batch(chunks, 10):
@@ -23,7 +25,7 @@ def chunk_and_embed(
             embedded_chunks.extend(batched_embedded_chunks)
 
     metadata["embedding"] = _add_embeddings_metadata(embedded_chunks, metadata["embedding"])
-    metadata["num_chunks"] = len(embedded_chunks)
+    metadata["num_chunks"] = num_chunks
     metadata["num_embedded_chunks"] = len(embedded_chunks)
 
     step_context = get_step_context()
@@ -36,7 +38,8 @@ def _add_chunks_metadata(chunks: list[Chunk], metadata: dict) -> dict:
     for chunk in chunks:
         category = chunk.get_category()
         if category not in metadata:
-            metadata[category] = chunk.metadata
+            # A copy: writing "authors" into the chunk's own dict would change the chunk itself.
+            metadata[category] = dict(chunk.metadata)
         if "authors" not in metadata[category]:
             metadata[category]["authors"] = list()
 
@@ -54,7 +57,8 @@ def _add_embeddings_metadata(embedded_chunks: list[EmbeddedChunk], metadata: dic
     for embedded_chunk in embedded_chunks:
         category = embedded_chunk.get_category()
         if category not in metadata:
-            metadata[category] = embedded_chunk.metadata
+            # A copy: writing "authors" into the chunk's own dict would save it to Qdrant with that chunk.
+            metadata[category] = dict(embedded_chunk.metadata)
         if "authors" not in metadata[category]:
             metadata[category]["authors"] = list()
 

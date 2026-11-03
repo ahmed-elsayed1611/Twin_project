@@ -16,6 +16,8 @@ chromedriver_autoinstaller.install()
 
 class BaseCrawler(ABC):
     model: type[NoSQLBaseDocument]
+    # The site this crawler handles, e.g. "https://medium.com". None means it is not registered by default.
+    domain: str | None = None
 
     @abstractmethod
     def extract(self, link: str, **kwargs) -> None: ...

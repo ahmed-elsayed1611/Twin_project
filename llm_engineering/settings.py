@@ -3,6 +3,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from zenml.client import Client
 from zenml.exceptions import EntityExistsError
 
+# Printed at start-up. Never add keys, tokens or connection strings with passwords here.
+LOGGED_SETTINGS = (
+    "DATABASE_NAME",
+    "USE_QDRANT_CLOUD",
+    "QDRANT_DATABASE_HOST",
+    "QDRANT_DATABASE_PORT",
+    "QDRANT_TIMEOUT",
+    "TEXT_EMBEDDING_MODEL_ID",
+    "RERANKING_CROSS_ENCODER_MODEL_ID",
+    "RAG_MODEL_DEVICE",
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -33,6 +45,9 @@ class Settings(BaseSettings):
     QDRANT_DATABASE_PORT: int = 6333
     QDRANT_CLOUD_URL: str = "str"
     QDRANT_APIKEY: str | None = None
+    # Seconds per request. Without it the client waits only 5 seconds; creating a collection took 75 seconds
+    # on a busy disk (Docker Desktop on Windows).
+    QDRANT_TIMEOUT: int = 120
 
     # AWS Authentication
     AWS_REGION: str = "eu-central-1"
@@ -100,6 +115,11 @@ class Settings(BaseSettings):
                 "Failed to load settings from the ZenML secret store. Defaulting to loading the settings from the '.env' file."
             )
             settings = Settings()
+
+        # A value in .env silently beats the default in this class, so show what is actually in use.
+        # Only settings without secrets are printed.
+        active = {name: getattr(settings, name) for name in LOGGED_SETTINGS}
+        logger.info(f"Active settings: {active}")
 
         return settings
 

@@ -8,6 +8,10 @@ from llm_engineering.domain.documents import ArticleDocument
 
 from .base import BaseCrawler
 
+# Pages shorter than this, or showing one of these markers, are error pages, not articles.
+MIN_ARTICLE_LENGTH = 1000
+ERROR_PAGE_MARKERS = ("Page not found", "404 Not Found")
+
 
 class CustomArticleCrawler(BaseCrawler):
     model = ArticleDocument
@@ -30,6 +34,13 @@ class CustomArticleCrawler(BaseCrawler):
         html2text = Html2TextTransformer()
         docs_transformed = html2text.transform_documents(docs)
         doc_transformed = docs_transformed[0]
+
+        page_text = doc_transformed.page_content.strip()
+        title = doc_transformed.metadata.get("title") or ""
+        if len(page_text) < MIN_ARTICLE_LENGTH or any(
+            marker in title or marker in page_text[:MIN_ARTICLE_LENGTH] for marker in ERROR_PAGE_MARKERS
+        ):
+            raise ValueError(f"Not a real article ({len(page_text)} chars, title {title!r}): {link}")
 
         content = {
             "Title": doc_transformed.metadata.get("title"),

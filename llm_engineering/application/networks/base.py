@@ -8,6 +8,7 @@ class SingletonMeta(type):
     """
 
     _instances: ClassVar = {}
+    _init_arguments: ClassVar = {}
 
     _lock: Lock = Lock()
 
@@ -18,8 +19,8 @@ class SingletonMeta(type):
 
     def __call__(cls, *args, **kwargs):
         """
-        Possible changes to the value of the `__init__` argument do not affect
-        the returned instance.
+        Returns the one instance of the class. Calling it again with different
+        `__init__` arguments raises instead of silently returning the old instance.
         """
         # Now, imagine that the program has just been launched. Since there's no
         # Singleton instance yet, multiple threads can simultaneously pass the
@@ -35,5 +36,11 @@ class SingletonMeta(type):
             if cls not in cls._instances:
                 instance = super().__call__(*args, **kwargs)
                 cls._instances[cls] = instance
+                cls._init_arguments[cls] = (args, kwargs)
+            elif (args or kwargs) and (args, kwargs) != cls._init_arguments[cls]:
+                # Returning the old instance here would silently ignore the new arguments (e.g. another model_id).
+                raise ValueError(
+                    f"{cls.__name__} already exists with arguments {cls._init_arguments[cls]}; got {(args, kwargs)}."
+                )
 
         return cls._instances[cls]
