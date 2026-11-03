@@ -1,6 +1,6 @@
 import sys; import os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from harness import *
-import io, contextlib
+import io, contextlib  # noqa: F401 (kept as in the original harness test; it cannot run in this CI, so left unchanged)
 root = tempfile.mkdtemp()
 fp = setup_drive(root)
 OV = {"NUM_EVAL_SAMPLES": "30", "JUDGE_REQUESTS_PER_MINUTE": "100000", "GENERATION": "dict(max_new_tokens=12, do_sample=False, repetition_penalty=1.1, no_repeat_ngram_size=4)"}
