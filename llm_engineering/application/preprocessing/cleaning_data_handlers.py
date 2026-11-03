@@ -28,6 +28,8 @@ def _clean_and_join(parts: list[str | None]) -> str:
     cleaned_parts = [clean_text(part) for part in parts if part]
 
     return PARAGRAPH_SEPARATOR.join(part for part in cleaned_parts if part)
+
+
 CleanedDocumentT = TypeVar("CleanedDocumentT", bound=CleanedDocument)
 
 

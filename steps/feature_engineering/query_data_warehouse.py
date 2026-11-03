@@ -22,7 +22,9 @@ def query_data_warehouse(
         logger.info(f"First name: {first_name}, Last name: {last_name}")
         user = UserDocument.find(first_name=first_name, last_name=last_name)
         if user is None:
-            raise ValueError(f"User '{author_full_name}' was not found in the data warehouse. Check the name in the config.")
+            raise ValueError(
+                f"User '{author_full_name}' was not found in the data warehouse. Check the name in the config."
+            )
         authors.append(user)
 
         results = fetch_all_data(user)
