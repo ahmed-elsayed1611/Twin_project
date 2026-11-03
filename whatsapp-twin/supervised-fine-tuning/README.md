@@ -92,7 +92,7 @@ What it also showed, and what the second version of the notebook does about it:
 | Single test messages got off-topic or invented answers | The model only ever trained with a few earlier messages; a lone line is outside what it learned. Real chat replies also refer to things outside the visible context | Metrics on real contexts; printed examples are made-up **multi-turn** chats |
 | Long rambling replies with temperature 0.4 + repetition penalties | The penalties push away from Ahmed's short, repeated words | Setting B: temperature 0.4, no penalties, 60 new tokens |
 | `[NAME]` / `[PHONE]` written by v2 | It learned from redacted data (the proof redaction worked) | `tools/reply_filter.py`, embedded unchanged, measured raw vs filtered |
-| Replies address everyone as the one contact in the data ("تعبانه", "قوليلي") | One conversation, one person, one neutral system message | A data limitation: more contacts, with who-you-are-talking-to in the system message |
+| Replies don't adapt their wording to who the model is talking to | One conversation, one person, one neutral system message | A data limitation: more contacts, with who-you-are-talking-to in the system message |
 | Invented personal facts (names, birth year, three different cities) | SFT learns style, not facts | Facts belong in retrieval (chapter 9), not in training. Places are private too |
 | *"incorrect regex pattern … will lead to incorrect tokenization"* on load (transformers 5) | Unknown | A **tokenizer check**: default vs `fix_mistral_regex=True` vs the original Qwen2.5-3B splitting, on every real message |
 

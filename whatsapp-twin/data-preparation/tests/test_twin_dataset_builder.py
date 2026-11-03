@@ -114,7 +114,7 @@ class WhatsAppDatasetBuilderTests(unittest.TestCase):
         # PHONE_PATTERN's lookbehind deliberately does not match it. It should
         # still be caught and redacted as a credential-like token.
         output_dir, _ = self.build_from_text(
-            "22/3/2023, 10:00 AM - Contact: جربي Example12345678 وقوليلي\n"
+            "22/3/2023, 10:00 AM - Contact: جرب Example12345678 وقولي\n"
             "22/3/2023, 10:02 AM - Ahmed: تمام\n"
         )
         sample_text = (output_dir / "all_samples.json").read_text(encoding="utf-8")
