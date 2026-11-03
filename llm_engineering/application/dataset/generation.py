@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-import tiktoken
 from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models.fake import FakeListLLM
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -10,6 +9,7 @@ from loguru import logger
 
 from llm_engineering import domain
 from llm_engineering.application import utils
+from llm_engineering.application.utils.misc import tiktoken_encoding_for
 from llm_engineering.domain.cleaned_documents import CleanedDocument
 from llm_engineering.domain.dataset import DatasetType, TrainTestSplit
 from llm_engineering.domain.prompt import GenerateDatasetSamplesPrompt, Prompt
@@ -21,17 +21,8 @@ from . import utils as generation_utils
 from .output_parsers import ListPydanticOutputParser
 
 
-def _tokenizer_for(model_id: str) -> tiktoken.Encoding:
-    # Non-OpenAI model ids (e.g. Cerebras' "gpt-oss-120b") are unknown to tiktoken; o200k_base is the encoding of
-    # the current OpenAI models and a close enough count for budgeting prompts.
-    try:
-        return tiktoken.encoding_for_model(model_id)
-    except KeyError:
-        return tiktoken.get_encoding("o200k_base")
-
-
 class DatasetGenerator(ABC):
-    tokenizer = _tokenizer_for(settings.OPENAI_MODEL_ID)
+    tokenizer = tiktoken_encoding_for(settings.OPENAI_MODEL_ID)
     dataset_type: DatasetType | None = None
 
     system_prompt_template = """You are a helpful assistant who generates {dataset_format} based on the given context. \
