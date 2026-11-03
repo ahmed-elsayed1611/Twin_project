@@ -5,6 +5,7 @@ from loguru import logger
 
 try:
     import boto3
+    import sagemaker
     from sagemaker.enums import EndpointType
     from sagemaker.huggingface import HuggingFaceModel
 except ModuleNotFoundError:
@@ -12,6 +13,18 @@ except ModuleNotFoundError:
 
 from llm_engineering.domain.inference import DeploymentStrategy
 from llm_engineering.settings import settings
+
+
+def sagemaker_session() -> "sagemaker.Session":
+    """A SageMaker session built from the .env settings, so deployment doesn't depend on a local `aws configure`."""
+
+    boto_session = boto3.Session(
+        region_name=settings.AWS_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY,
+        aws_secret_access_key=settings.AWS_SECRET_KEY,
+    )
+
+    return sagemaker.Session(boto_session=boto_session)
 
 
 class SagemakerHuggingfaceStrategy(DeploymentStrategy):
@@ -51,7 +64,8 @@ class SagemakerHuggingfaceStrategy(DeploymentStrategy):
 
         logger.info("Starting deployment using Sagemaker Huggingface Strategy...")
         logger.info(
-            f"Deployment parameters: nb of replicas: {settings.COPIES}, nb of gpus:{settings.GPUS}, instance_type:{settings.GPU_INSTANCE_TYPE}"
+            f"Deployment parameters: target: {settings.DEPLOYMENT_TARGET}, nb of replicas: {settings.COPIES}, "
+            f"instance_type: {gpu_instance_type}"
         )
         try:
             # Delegate to the deployment service to handle the actual deployment details
@@ -169,6 +183,7 @@ class DeploymentService:
             role=role_arn,
             image_uri=llm_image,
             env=config,
+            sagemaker_session=sagemaker_session(),
         )
 
         # Deploy or update the model based on the endpoint existence

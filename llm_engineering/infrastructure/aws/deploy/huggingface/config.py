@@ -20,6 +20,19 @@ hugging_face_deploy_config = {
     "HF_MODEL_QUANTIZE": "bitsandbytes",
 }
 
+# Hugging Face's CPU inference container (DEPLOYMENT_TARGET="cpu") is not TGI: it loads a plain transformers
+# pipeline for HF_TASK and has none of TGI's token limits or batching settings. The token lets it download a
+# private repo; the toolkit has read it as HF_API_TOKEN, newer versions as HF_TOKEN.
+hugging_face_cpu_deploy_config = {
+    "HF_MODEL_ID": settings.HF_MODEL_ID,
+    "HF_TASK": "text-generation",
+    "HF_API_TOKEN": settings.HUGGINGFACE_ACCESS_TOKEN,
+    "HF_TOKEN": settings.HUGGINGFACE_ACCESS_TOKEN,
+    # The model server starts one worker per vCPU by default, each with its own copy of the model. 8 copies of a
+    # 3B model in 32-bit (~12 GB each) on a 32 GB ml.m5.2xlarge died with "Cannot allocate memory" (29 Oct).
+    "SAGEMAKER_MODEL_SERVER_WORKERS": "1",
+}
+
 
 model_resource_config = ResourceRequirements(
     requests={

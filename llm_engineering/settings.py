@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     COPIES: int = 1  # Number of replicas
     GPUS: int = 1  # Number of GPUs
     CPUS: int = 2  # Number of CPU cores
+    # "gpu": the book's TGI container on GPU_INSTANCE_TYPE. "cpu": Hugging Face's CPU inference container on
+    # CPU_INSTANCE_TYPE, for an account without GPU quota (mine was refused one in Oct 2026). The image tag is
+    # passed explicitly because SDK 2.232 only knows CPU images up to transformers 4.37.
+    DEPLOYMENT_TARGET: str = "gpu"
+    CPU_INSTANCE_TYPE: str = "ml.m5.2xlarge"
+    CPU_INFERENCE_IMAGE_TAG: str = "2.6.0-transformers4.51.3-cpu-py312-ubuntu22.04"
 
     SAGEMAKER_ENDPOINT_CONFIG_INFERENCE: str = "twin"
     SAGEMAKER_ENDPOINT_INFERENCE: str = "twin"
@@ -80,6 +86,16 @@ class Settings(BaseSettings):
     # 150 tokens (about 110 words) cut LinkedIn posts off mid-sentence. 600 still fits the endpoint:
     # up to MAX_INPUT_LENGTH (2048) prompt tokens + 600 stays under MAX_TOTAL_TOKENS (4096).
     MAX_NEW_TOKENS_INFERENCE: int = 600
+
+    # My WhatsApp twin (POST /reply): the system message it was fine-tuned with (SFT notebook). Generation matches the
+    # evaluation notebook (greedy, repetition_penalty 1.1, no_repeat_ngram_size 4) except the length: on the CPU
+    # endpoint (ml.m5.2xlarge, 32-bit, ~1 token/s) 100 new tokens ran past the real-time endpoint's 60-second
+    # limit (29 Oct: "احكيلي عن نفسك" timed out). 40 is still a long WhatsApp reply.
+    TWIN_SYSTEM_MESSAGE: str = (
+        "Continue the conversation as Ahmed. Match the language, tone, and context of the "
+        "conversation. Do not claim to know facts that are not supported by the dialogue."
+    )
+    TWIN_MAX_NEW_TOKENS: int = 40
 
     # RAG
     TEXT_EMBEDDING_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
