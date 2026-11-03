@@ -13,13 +13,12 @@ import json
 import logging
 import re
 import shutil
-import sys
 import tempfile
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterable, Iterator, Optional, Sequence
+from typing import Iterable, Optional, Sequence
 
 LOGGER = logging.getLogger("twin_dataset_builder")
 
