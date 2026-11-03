@@ -21,8 +21,12 @@ class SelfQuery(RAGStep):
             return query
 
         prompt = SelfQueryTemplate().create_template()
-        model = ChatOpenAI(model=settings.OPENAI_MODEL_ID, api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL,
-                           temperature=0)
+        model = ChatOpenAI(
+            model=settings.OPENAI_MODEL_ID,
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL,
+            temperature=0,
+        )
 
         chain = prompt | model
 
