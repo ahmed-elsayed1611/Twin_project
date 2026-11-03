@@ -127,7 +127,6 @@ def build_embedding_index(pool_texts, model):
     """Encodes the whole candidate pool once into normalized embeddings, so
     per-pair cosine similarity later is just a single dot product -- much
     cheaper than re-encoding on every comparison."""
-    import numpy as np
     embeddings = model.encode(
         pool_texts, batch_size=64, show_progress_bar=True,
         normalize_embeddings=True, convert_to_numpy=True,
