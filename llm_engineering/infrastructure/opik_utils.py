@@ -18,7 +18,12 @@ def configure_opik() -> None:
 
         os.environ["OPIK_PROJECT_NAME"] = settings.COMET_PROJECT
 
-        opik.configure(api_key=settings.COMET_API_KEY, workspace=default_workspace, use_local=False, force=True)
+        try:
+            opik.configure(api_key=settings.COMET_API_KEY, workspace=default_workspace, use_local=False, force=True)
+        except Exception as error:  # monitoring must never stop the application
+            logger.warning(f"Opik could not be configured ({error}). Continuing without prompt monitoring.")
+            os.environ["OPIK_TRACK_DISABLE"] = "true"  # otherwise every @opik.track call retries sending traces
+            return
         logger.info("Opik configured successfully.")
     else:
         logger.warning(

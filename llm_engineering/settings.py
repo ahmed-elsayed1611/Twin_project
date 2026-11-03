@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     # OpenAI API
     OPENAI_MODEL_ID: str = "gpt-4o-mini"
     OPENAI_API_KEY: str | None = None
+    # Any OpenAI-compatible provider, e.g. Cerebras: "https://api.cerebras.ai/v1" (then use its model id and key).
+    OPENAI_BASE_URL: str | None = None
 
     # Huggingface API
     HUGGINGFACE_ACCESS_TOKEN: str | None = None
@@ -70,9 +72,14 @@ class Settings(BaseSettings):
 
     SAGEMAKER_ENDPOINT_CONFIG_INFERENCE: str = "twin"
     SAGEMAKER_ENDPOINT_INFERENCE: str = "twin"
+    # "sagemaker": the deployed fine-tuned twin. "openai_compatible": OPENAI_MODEL_ID via OPENAI_BASE_URL (OpenAI,
+    # Cerebras, ...), to run the RAG pipeline before the twin is deployed.
+    LLM_INFERENCE_BACKEND: str = "sagemaker"
     TEMPERATURE_INFERENCE: float = 0.01
     TOP_P_INFERENCE: float = 0.9
-    MAX_NEW_TOKENS_INFERENCE: int = 150
+    # 150 tokens (about 110 words) cut LinkedIn posts off mid-sentence. 600 still fits the endpoint:
+    # up to MAX_INPUT_LENGTH (2048) prompt tokens + 600 stays under MAX_TOTAL_TOKENS (4096).
+    MAX_NEW_TOKENS_INFERENCE: int = 600
 
     # RAG
     TEXT_EMBEDDING_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"

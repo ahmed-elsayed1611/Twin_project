@@ -14,7 +14,7 @@ from llm_engineering.domain.embedded_chunks import (
 )
 from llm_engineering.domain.queries import EmbeddedQuery, Query
 
-from .query_expanison import QueryExpansion
+from .query_expansion import QueryExpansion
 from .reranking import Reranker
 from .self_query import SelfQuery
 
@@ -32,14 +32,28 @@ class ContextRetriever:
         k: int = 3,
         expand_to_n_queries: int = 3,
     ) -> list:
+        if k < 1:
+            raise ValueError(f"'k' should be at least 1. Got {k}.")
+
         query_model = Query.from_str(query)
 
-        query_model = self._metadata_extractor.generate(query_model)
+        # The two LLM calls don't need each other's answers, so they run at the same time. Self-query gets
+        # a copy because it writes the author onto its query while expansion is reading the original.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            metadata_task = executor.submit(self._metadata_extractor.generate, query_model.model_copy())
+            expansion_task = executor.submit(
+                self._query_expander.generate, query_model, expand_to_n=expand_to_n_queries
+            )
+
+            query_model = metadata_task.result()
+            n_generated_queries = expansion_task.result()
         logger.info(
             f"Successfully extracted the author_full_name = {query_model.author_full_name} from the query.",
         )
 
-        n_generated_queries = self._query_expander.generate(query_model, expand_to_n=expand_to_n_queries)
+        for generated_query in n_generated_queries:
+            generated_query.author_id = query_model.author_id
+            generated_query.author_full_name = query_model.author_full_name
         logger.info(
             f"Successfully generated {len(n_generated_queries)} search queries.",
         )
@@ -61,8 +75,9 @@ class ContextRetriever:
         return k_documents
 
     def _search(self, query: Query, k: int = 3) -> list[EmbeddedChunk]:
-        assert k >= 3, "k should be >= 3"
-
+        # Each collection may return up to k candidates and the reranker keeps the best k overall.
+        # The old `k // 3` per collection ignored the remainder (k=4 and k=5 behaved like 3), failed for k < 3,
+        # and gave every collection the same quota whatever the question was about.
         def _search_data_category(
             data_category_odm: type[EmbeddedChunk], embedded_query: EmbeddedQuery
         ) -> list[EmbeddedChunk]:
@@ -82,7 +97,7 @@ class ContextRetriever:
 
             return data_category_odm.search(
                 query_vector=embedded_query.embedding,
-                limit=k // 3,
+                limit=k,
                 query_filter=query_filter,
             )
 

@@ -3,6 +3,17 @@ from __future__ import annotations
 from llm_engineering.domain.inference import Inference
 from llm_engineering.settings import settings
 
+# Must stay identical to `alpaca_template` in llm_engineering/model/finetuning/finetune.py: the twin was fine-tuned
+# (SFT and DPO) on prompts in this format. That file imports unsloth, so the template is repeated here instead
+# of imported; tests/unit/test_rag.py checks the two are the same.
+ALPACA_TEMPLATE = """Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+{}
+
+### Response:
+{}"""
+
 
 class InferenceExecutor:
     def __init__(
@@ -26,8 +37,10 @@ Context: {context}
             self.prompt = prompt
 
     def execute(self) -> str:
+        instruction = self.prompt.format(query=self.query, context=self.context).strip()
+
         self.llm.set_payload(
-            inputs=self.prompt.format(query=self.query, context=self.context),
+            inputs=ALPACA_TEMPLATE.format(instruction, ""),
             parameters={
                 "max_new_tokens": settings.MAX_NEW_TOKENS_INFERENCE,
                 "repetition_penalty": 1.1,

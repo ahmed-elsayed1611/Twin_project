@@ -10,6 +10,9 @@ from llm_engineering.settings import settings
 from .base import RAGStep
 from .prompt_templates import SelfQueryTemplate
 
+# Answers that mean "no name in the question". The model is told to say "none", but may add a dot or a capital.
+NO_AUTHOR_ANSWERS = {"", "none", "null", "n/a"}
+
 
 class SelfQuery(RAGStep):
     @opik.track(name="SelfQuery.generate")
@@ -18,18 +21,31 @@ class SelfQuery(RAGStep):
             return query
 
         prompt = SelfQueryTemplate().create_template()
-        model = ChatOpenAI(model=settings.OPENAI_MODEL_ID, api_key=settings.OPENAI_API_KEY, temperature=0)
+        model = ChatOpenAI(
+            model=settings.OPENAI_MODEL_ID,
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL,
+            temperature=0,
+        )
 
         chain = prompt | model
 
-        response = chain.invoke({"question": query})
-        user_full_name = response.content.strip("\n ")
+        response = chain.invoke({"question": query.content})
+        user_full_name = response.content.strip("\n \"'.")
 
-        if user_full_name == "none":
+        if user_full_name.lower() in NO_AUTHOR_ANSWERS:
             return query
 
+        # Reading must not write: an unknown or misspelled name used to create an empty user here,
+        # and the search then filtered on a user who owns no chunks.
         first_name, last_name = utils.split_user_full_name(user_full_name)
-        user = UserDocument.get_or_create(first_name=first_name, last_name=last_name)
+        user = UserDocument.find(first_name=first_name, last_name=last_name)
+        if user is None:
+            logger.warning(
+                f"Author '{user_full_name}' is not in the data warehouse. Searching without an author filter."
+            )
+
+            return query
 
         query.author_id = user.id
         query.author_full_name = user.full_name
