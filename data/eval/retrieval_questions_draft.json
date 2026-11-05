@@ -1,0 +1,352 @@
+[
+  {
+    "question": "How can PyTorch inference latency be reduced without relying on external optimization tools?",
+    "type": "simple",
+    "document_id": "2ce3c5d1-730b-4258-88ab-07009eddaf33",
+    "title": "Reduce your PyTorch code latency by 82% - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What batch size provided the optimal speedup on Nvidia A‑series GPUs in the author's tests?",
+    "type": "specific",
+    "document_id": "2ce3c5d1-730b-4258-88ab-07009eddaf33",
+    "title": "Reduce your PyTorch code latency by 82% - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What three solutions does the article propose for handling difficulties in deploying machine learning models?",
+    "type": "simple",
+    "document_id": "037e6362-8be7-4860-992f-1f075921a669",
+    "title": "Problems deploying your ML models? Here is your solution!",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "How many input examples were created for the synthetic domain-specific Q&A dataset in the example?",
+    "type": "specific",
+    "document_id": "037e6362-8be7-4860-992f-1f075921a669",
+    "title": "Problems deploying your ML models? Here is your solution!",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What is the primary function of the Axolotl tool in LLM fine‑tuning?",
+    "type": "simple",
+    "document_id": "a219cfaa-c52a-4c7c-aa39-60883cc507cd",
+    "title": "A Beginner’s Guide to LLM Fine-Tuning - Maxime Labonne",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "In the example configuration, what value is assigned to the micro_batch_size parameter?",
+    "type": "specific",
+    "document_id": "a219cfaa-c52a-4c7c-aa39-60883cc507cd",
+    "title": "A Beginner’s Guide to LLM Fine-Tuning - Maxime Labonne",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What are the key components needed to build a production‑ready LLM inference pipeline that includes retrieval‑augmented generation?",
+    "type": "simple",
+    "document_id": "597ead2d-ae88-43f9-945d-d974630e858a",
+    "title": "Architect scalable and cost-effective LLM & RAG inference pipelines",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which streaming framework is used to process queue messages in the feature pipeline?",
+    "type": "specific",
+    "document_id": "597ead2d-ae88-43f9-945d-d974630e858a",
+    "title": "Architect scalable and cost-effective LLM & RAG inference pipelines",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which stages make up a production Retrieval‑Augmented Generation (RAG) pipeline?",
+    "type": "simple",
+    "document_id": "46f9a4cc-cf3b-43c6-9026-6c9cddf8674a",
+    "title": "4 Advanced RAG Algorithms You Must Know - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What is the maximum number of vector dimensions that Qdrant supports?",
+    "type": "specific",
+    "document_id": "46f9a4cc-cf3b-43c6-9026-6c9cddf8674a",
+    "title": "4 Advanced RAG Algorithms You Must Know - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What is the ultimate MLOps tool highlighted in the article?",
+    "type": "simple",
+    "document_id": "0eae1447-70c8-40b2-a5c4-96f6de69f04b",
+    "title": "The ultimate MLOps tool - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which base Docker image is recommended for building the AWS Lambda function in the article's CI/CD pipeline?",
+    "type": "specific",
+    "document_id": "0eae1447-70c8-40b2-a5c4-96f6de69f04b",
+    "title": "The ultimate MLOps tool - by Paul Iusztin",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which four key aspects should be evaluated before designing a production-ready machine-learning architecture?",
+    "type": "simple",
+    "document_id": "53bc94d1-8cfd-4e65-b55c-9b3582f6ed64",
+    "title": "Ready for production ML? Here are the 4 pillars to build production ML systems",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "In the Comet example, how is a model version labeled when it moves from staging to production?",
+    "type": "specific",
+    "document_id": "53bc94d1-8cfd-4e65-b55c-9b3582f6ed64",
+    "title": "Ready for production ML? Here are the 4 pillars to build production ML systems",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What is the main objective of applying reinforcement learning techniques in the Minecraft environment described in the article?",
+    "type": "simple",
+    "document_id": "319b83ba-c6bd-44bf-9f73-91096f4a0c47",
+    "title": "Reinforcement Learning in Minecraft: Create a Bot to Find Diamonds",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "At what rate does the MineRL environment process actions per second?",
+    "type": "specific",
+    "document_id": "319b83ba-c6bd-44bf-9f73-91096f4a0c47",
+    "title": "Reinforcement Learning in Minecraft: Create a Bot to Find Diamonds",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What is the primary focus of the LLM‑Twin free course?",
+    "type": "simple",
+    "document_id": "87f34471-9a5b-4641-8272-15b6a18a9be7",
+    "title": "The LLM-Twin Free Course on Production-Ready RAG applications.",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which open‑source LLM is fine‑tuned in Lesson 7 of the course?",
+    "type": "specific",
+    "document_id": "87f34471-9a5b-4641-8272-15b6a18a9be7",
+    "title": "The LLM-Twin Free Course on Production-Ready RAG applications.",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What are the two primary concepts covered in LLMOps?",
+    "type": "simple",
+    "document_id": "9c6f5239-fc76-4fe9-a8e2-77f662d0c69f",
+    "title": "2 Key LLMOps Concepts - by Alex Razvant",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "According to the VRAM calculation example, how many gigabytes of memory are needed to load a 7‑billion‑parameter model using BFP16 precision?",
+    "type": "specific",
+    "document_id": "9c6f5239-fc76-4fe9-a8e2-77f662d0c69f",
+    "title": "2 Key LLMOps Concepts - by Alex Razvant",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which advanced retrieval methods are recommended to enhance a RAG system's accuracy?",
+    "type": "simple",
+    "document_id": "649bd7d7-aa0e-4ada-b5e2-1c50fe7c95e6",
+    "title": "The 4 Advanced RAG Algorithms You Must Know to Implement",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which language model does the article propose using for the post‑retrieval reranking step?",
+    "type": "specific",
+    "document_id": "649bd7d7-aa0e-4ada-b5e2-1c50fe7c95e6",
+    "title": "The 4 Advanced RAG Algorithms You Must Know to Implement",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What are the four key decoding strategies used for generating text with large language models?",
+    "type": "simple",
+    "document_id": "cb6e689e-e718-42c8-80b1-44db7d568c3b",
+    "title": "4 key decoding strategies for LLMs that you must know",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "In the beam search illustration, what values are given for the number of beams and the maximum generation length?",
+    "type": "specific",
+    "document_id": "cb6e689e-e718-42c8-80b1-44db7d568c3b",
+    "title": "4 key decoding strategies for LLMs that you must know",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What method does the article describe for quickly creating a Q&A dataset to fine‑tune a specialized language model?",
+    "type": "simple",
+    "document_id": "dffed5e0-c824-40db-9388-a26fa09f7b49",
+    "title": "DML: How do you generate a Q&A dataset in <30 minutes to fine-tune your LLMs?",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "In the demonstrated workflow, how many synthetic input examples were produced using the teacher LLM?",
+    "type": "specific",
+    "document_id": "dffed5e0-c824-40db-9388-a26fa09f7b49",
+    "title": "DML: How do you generate a Q&A dataset in <30 minutes to fine-tune your LLMs?",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What are the three separate pipelines used to build a financial assistant powered by large language models?",
+    "type": "simple",
+    "document_id": "032f3296-b891-484d-9e00-c2872bbb9bbe",
+    "title": "DML: Unwrapping the 3-pipeline design of a financial assistant powered by LLMs | LLMOps vs. MLOps",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which sentence‑transformers encoder model is used to embed news chunks before they are stored in the Qdrant vector database?",
+    "type": "specific",
+    "document_id": "032f3296-b891-484d-9e00-c2872bbb9bbe",
+    "title": "DML: Unwrapping the 3-pipeline design of a financial assistant powered by LLMs | LLMOps vs. MLOps",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What tools does the article suggest for speeding up LLM inference and visualizing the attention mechanism?",
+    "type": "simple",
+    "document_id": "c4ad61cb-4875-41f6-a9d9-f0da74303586",
+    "title": "Upskill your LLM knowledge base with these tools.",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which environment variable must be set to force CUDA to follow the system‑layer GPU ordering, and what value should it be assigned?",
+    "type": "specific",
+    "document_id": "c4ad61cb-4875-41f6-a9d9-f0da74303586",
+    "title": "Upskill your LLM knowledge base with these tools.",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What does quantizing Llama models with GGML and llama.cpp accomplish?",
+    "type": "simple",
+    "document_id": "715b7861-0f40-4025-bf87-7dddeabaf278",
+    "title": "Quantize Llama models with GGML and llama.cpp",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What are the file sizes of the FP16 model and the Q4_K_M quantized model, and how many times smaller is the latter?",
+    "type": "specific",
+    "document_id": "715b7861-0f40-4025-bf87-7dddeabaf278",
+    "title": "Quantize Llama models with GGML and llama.cpp",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What are the key components needed to create an inference pipeline for a financial assistant powered by large language models and a vector database?",
+    "type": "simple",
+    "document_id": "8ff6064c-9c09-494f-a42d-a60b0e80387c",
+    "title": "DML: This is what you need to build an inference pipeline for a financial assistant powered by LLMs, vector DBs and LLMOps",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "How many financial news chunks are retrieved from the Qdrant vector database for each query in the pipeline?",
+    "type": "specific",
+    "document_id": "8ff6064c-9c09-494f-a42d-a60b0e80387c",
+    "title": "DML: This is what you need to build an inference pipeline for a financial assistant powered by LLMs, vector DBs and LLMOps",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What resources does the guide recommend for developers starting machine learning in 2022?",
+    "type": "simple",
+    "document_id": "8fbc7862-3fd6-4e44-a9c2-19bf6eb43ba4",
+    "title": "How to start Machine Learning for Developers in 2022",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "Which YouTube channel is highlighted for delivering two‑minute summaries of machine‑learning research papers?",
+    "type": "specific",
+    "document_id": "8fbc7862-3fd6-4e44-a9c2-19bf6eb43ba4",
+    "title": "How to start Machine Learning for Developers in 2022",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What are the eight main categories of MLOps tools recommended for an MLOps engineer?",
+    "type": "simple",
+    "document_id": "e85a60a3-6667-45fe-81fd-9384322b7cea",
+    "title": "DML: 8 types of MLOps tools that must be in your toolbelt to be a successful MLOps engineer",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Can you name a monitoring tool mentioned for ML systems?",
+    "type": "specific",
+    "document_id": "e85a60a3-6667-45fe-81fd-9384322b7cea",
+    "title": "DML: 8 types of MLOps tools that must be in your toolbelt to be a successful MLOps engineer",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What problem does GraphSAGE address when applying graph neural networks to very large graphs?",
+    "type": "simple",
+    "document_id": "4ddd85f7-4d82-4be0-96c1-16056bd9ec18",
+    "title": "GraphSAGE: Scaling up Graph Neural Networks",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "How many training nodes are available in the PubMed dataset used in the tutorial?",
+    "type": "specific",
+    "document_id": "4ddd85f7-4d82-4be0-96c1-16056bd9ec18",
+    "title": "GraphSAGE: Scaling up Graph Neural Networks",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "How can a streaming pipeline be used to populate a vector database for real‑time retrieval‑augmented generation (RAG)?",
+    "type": "simple",
+    "document_id": "b6d86294-1bcc-4226-8218-3a63cab813a2",
+    "title": "DML: How to implement a streaming pipeline to populate a vector DB for real-time RAG?",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which encoder‑only model does the article use to generate 384‑dimensional embeddings for the news article chunks?",
+    "type": "specific",
+    "document_id": "b6d86294-1bcc-4226-8218-3a63cab813a2",
+    "title": "DML: How to implement a streaming pipeline to populate a vector DB for real-time RAG?",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What are Graph Attention Networks and how do they differ from traditional Graph Convolutional Networks?",
+    "type": "simple",
+    "document_id": "e48f1530-201c-4ee2-8d49-bdc30a70b5af",
+    "title": "Graph Attention Networks: Self-Attention Explained",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "According to the article, how many isolated nodes are present in the CiteSeer dataset?",
+    "type": "specific",
+    "document_id": "e48f1530-201c-4ee2-8d49-bdc30a70b5af",
+    "title": "Graph Attention Networks: Self-Attention Explained",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "How do linear programming and integer programming differ regarding the kinds of variables they support?",
+    "type": "simple",
+    "document_id": "bb728e7c-4c22-443c-a630-b68f5e54b5a6",
+    "title": "Integer vs. Linear Programming in Python",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What weighting factor is used to combine attack and health into the power metric in the larger resource scenario?",
+    "type": "specific",
+    "document_id": "bb728e7c-4c22-443c-a630-b68f5e54b5a6",
+    "title": "Integer vs. Linear Programming in Python",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What problem does the real-time retrieval system aim to solve for social media data?",
+    "type": "simple",
+    "document_id": "ba6ba94f-b2d0-4ad8-9dbc-638f5eb1a081",
+    "title": "A Real-time Retrieval System for RAG on Social Media Data",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "How many LinkedIn posts are ingested into the vector database in the example?",
+    "type": "specific",
+    "document_id": "ba6ba94f-b2d0-4ad8-9dbc-638f5eb1a081",
+    "title": "A Real-time Retrieval System for RAG on Social Media Data",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What four topics does the author recommend focusing on for monthly machine‑learning skill development?",
+    "type": "simple",
+    "document_id": "20a85606-a880-4894-bfb7-6b0cad8b3f1f",
+    "title": "My monthly recommendations for leveling up in ML",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "How many vector‑database solutions are compared, and across how many features, in the provided vector DB comparison?",
+    "type": "specific",
+    "document_id": "20a85606-a880-4894-bfb7-6b0cad8b3f1f",
+    "title": "My monthly recommendations for leveling up in ML",
+    "author": "Paul Iusztin"
+  }
+]
