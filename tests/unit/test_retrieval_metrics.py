@@ -20,7 +20,7 @@ def test_rr_first_position():
 
 
 def test_rr_second_position():
-    assert reciprocal_rank(RESULTS, 'D3') == 0.5
+    assert reciprocal_rank(RESULTS, "D3") == 0.5
 
 
 def test_rr_not_found():

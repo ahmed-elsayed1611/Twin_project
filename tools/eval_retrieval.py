@@ -7,6 +7,8 @@ import json
 import time
 from pathlib import Path
 
+from loguru import logger
+
 from llm_engineering.application.evaluation.retrieval_metrics import recall_at_k, reciprocal_rank
 from llm_engineering.application.rag.retriever import ContextRetriever
 
@@ -38,10 +40,10 @@ def main() -> None:
     mean_recall = sum(recalls) / len(recalls)
     mean_mrr = sum(rrs) / len(rrs)
 
-    print(f"Questions: {len(answerable)}")
-    print(f"recall@{K}: {mean_recall:.2f}")
-    print(f"MRR:       {mean_mrr:.2f}")
-    print(f"Latency:   median {sorted(latencies)[len(latencies) // 2]:.1f} s")
+    logger.info(f"Questions: {len(answerable)}")
+    logger.info(f"recall@{K}: {mean_recall:.2f}")
+    logger.info(f"MRR:       {mean_mrr:.2f}")
+    logger.info(f"Latency:   median {sorted(latencies)[len(latencies) // 2]:.1f} s")
 
 
 if __name__ == "__main__":
