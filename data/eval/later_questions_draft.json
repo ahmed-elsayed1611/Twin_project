@@ -1,0 +1,114 @@
+[
+  {
+    "question": "How does the described system retrieve and rank social media posts for real‑time retrieval‑augmented generation?",
+    "type": "later_simple",
+    "document_id": "ba6ba94f-b2d0-4ad8-9dbc-638f5eb1a081",
+    "title": "A Real-time Retrieval System for RAG on Social Media Data",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What is the default number of results returned by the QdrantVectorDBRetriever.search method when the limit parameter is omitted?",
+    "type": "later_specific",
+    "document_id": "ba6ba94f-b2d0-4ad8-9dbc-638f5eb1a081",
+    "title": "A Real-time Retrieval System for RAG on Social Media Data",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which post‑training quantization method is showcased for reducing large language models to 4‑bit precision?",
+    "type": "later_simple",
+    "document_id": "a89d6d0f-861f-4a11-aa6b-730ed30f6eb8",
+    "title": "4-bit Quantization with GPTQ - Maxime Labonne",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "In the example configuration, what value is assigned to the group_size parameter for quantization?",
+    "type": "later_specific",
+    "document_id": "a89d6d0f-861f-4a11-aa6b-730ed30f6eb8",
+    "title": "4-bit Quantization with GPTQ - Maxime Labonne",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What tool is demonstrated for combining multiple language models into a single model?",
+    "type": "later_simple",
+    "document_id": "6d5c6e46-1390-4bb7-86ee-73df95b7a610",
+    "title": "Merge Large Language Models with mergekit",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "Which command-line option limits each output shard to about one gigabyte during the merge process?",
+    "type": "later_specific",
+    "document_id": "6d5c6e46-1390-4bb7-86ee-73df95b7a610",
+    "title": "Merge Large Language Models with mergekit",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What is the main goal of the streaming pipeline built with Bytewax in the article?",
+    "type": "later_simple",
+    "document_id": "c647c345-aeb5-46f7-8f16-8a6345344069",
+    "title": "SOTA Python Streaming Pipelines for Fine-tuning LLMs and RAG — in Real-Time!",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which embedding model does the pipeline use for code data points?",
+    "type": "later_specific",
+    "document_id": "c647c345-aeb5-46f7-8f16-8a6345344069",
+    "title": "SOTA Python Streaming Pipelines for Fine-tuning LLMs and RAG — in Real-Time!",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "How does nonlinear programming help determine the best way to split a marketing budget among different advertising channels?",
+    "type": "later_simple",
+    "document_id": "d0f2f790-c745-4858-a2c5-e4daeedb53cf",
+    "title": "The Art of Spending: Optimizing Your Marketing Budget with Nonlinear Optimization",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "According to the example, what budget amount does the ECOS solver assign to Google Ads as part of the optimal allocation?",
+    "type": "later_specific",
+    "document_id": "d0f2f790-c745-4858-a2c5-e4daeedb53cf",
+    "title": "The Art of Spending: Optimizing Your Marketing Budget with Nonlinear Optimization",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "Which online courses and platforms are recommended for developers beginning machine learning in 2022?",
+    "type": "later_simple",
+    "document_id": "8fbc7862-3fd6-4e44-a9c2-19bf6eb43ba4",
+    "title": "How to start Machine Learning for Developers in 2022",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "How many quick tutorials are included in Kaggle's introductory machine learning course?",
+    "type": "later_specific",
+    "document_id": "8fbc7862-3fd6-4e44-a9c2-19bf6eb43ba4",
+    "title": "How to start Machine Learning for Developers in 2022",
+    "author": "Maxime Labonne"
+  },
+  {
+    "question": "What are the two primary hybrid search methods for combining keyword-based and vector-based retrieval?",
+    "type": "later_simple",
+    "document_id": "649bd7d7-aa0e-4ada-b5e2-1c50fe7c95e6",
+    "title": "The 4 Advanced RAG Algorithms You Must Know to Implement",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "In the article's example, how many queries (N) and results per query (K) are used to obtain a total of 15 retrieved chunks?",
+    "type": "later_specific",
+    "document_id": "649bd7d7-aa0e-4ada-b5e2-1c50fe7c95e6",
+    "title": "The 4 Advanced RAG Algorithms You Must Know to Implement",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "What strategy does the article recommend for running headless browsers within AWS Lambda as part of a data ingestion pipeline for machine learning and marketing intelligence?",
+    "type": "later_simple",
+    "document_id": "fd48444e-ab32-49b9-afdc-14fe8ecafd41",
+    "title": "Data Ingestion Architecture for ML and Marketing Intelligence",
+    "author": "Paul Iusztin"
+  },
+  {
+    "question": "Which Chrome driver version (including the full version number) is downloaded in the Dockerfile used for the Lambda environment?",
+    "type": "later_specific",
+    "document_id": "fd48444e-ab32-49b9-afdc-14fe8ecafd41",
+    "title": "Data Ingestion Architecture for ML and Marketing Intelligence",
+    "author": "Paul Iusztin"
+  }
+]

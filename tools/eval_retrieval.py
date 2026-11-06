@@ -26,7 +26,7 @@ def main() -> None:
     answerable = [q for q in questions if q["type"] != "no_answer"]
     retriever = ContextRetriever(mock=False)
 
-    recalls, rrs, latencies = [], [], []
+    recalls, rrs, latencies = {1: [], 3: [], 5: []}, [], []
     for q in answerable:
         start = time.perf_counter()
         chunks = retriever.search(q["question"], k=K)
@@ -34,14 +34,15 @@ def main() -> None:
 
         doc_ids = unique_in_order([str(chunk.document_id) for chunk in chunks])
 
-        recalls.append(recall_at_k(doc_ids, q["document_id"], K))
+        for k in (1, 3, 5):
+            recalls[k].append(recall_at_k(doc_ids, q["document_id"], k))
         rrs.append(reciprocal_rank(doc_ids, q["document_id"]))
 
-    mean_recall = sum(recalls) / len(recalls)
     mean_mrr = sum(rrs) / len(rrs)
 
     logger.info(f"Questions: {len(answerable)}")
-    logger.info(f"recall@{K}: {mean_recall:.2f}")
+    for k in (1, 3, 5):
+        logger.info(f"recall@{k}: {sum(recalls[k]) / len(recalls[k]):.2f}")
     logger.info(f"MRR:       {mean_mrr:.2f}")
     logger.info(f"Latency:   median {sorted(latencies)[len(latencies) // 2]:.1f} s")
 
