@@ -88,18 +88,29 @@ class ArticleChunkingHandler(ChunkingDataHandler):
         data_models_list = []
 
         cleaned_content = data_model.content
+        title = data_model.title
+
+        # Chunk headers: every chunk starts with the article title, so a chunk from the middle
+        # of an article still says what it is about. The body already starts with the title,
+        # so it is removed there first; otherwise the first chunk would carry it twice.
+        header = f"{title}\n\n" if title else ""
+        if title and cleaned_content.startswith(title):
+            cleaned_content = cleaned_content[len(title) :].lstrip()
+
+        # The header's tokens count toward the model's limit, so the chunks get less room.
         chunks = chunk_article(
             cleaned_content,
             min_length=self.metadata["min_length"],
-            max_length=self.metadata["max_length"],
+            max_length=self.metadata["max_length"] - count_tokens(header),
             length_function=count_tokens,
         )
 
         for chunk in chunks:
-            chunk_id = hashlib.md5(f"{data_model.id}:{chunk}".encode()).hexdigest()
+            content = header + chunk
+            chunk_id = hashlib.md5(f"{data_model.id}:{content}".encode()).hexdigest()
             model = ArticleChunk(
                 id=UUID(chunk_id, version=4),
-                content=chunk,
+                content=content,
                 platform=data_model.platform,
                 link=data_model.link,
                 document_id=data_model.id,
