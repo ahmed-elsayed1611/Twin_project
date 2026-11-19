@@ -8,9 +8,19 @@ from loguru import logger
 from pydantic import UUID4, BaseModel, Field
 from qdrant_client.http import exceptions
 from qdrant_client.http.models import Distance, VectorParams
-from qdrant_client.models import CollectionInfo, PointStruct, Record
+from qdrant_client.models import (
+    CollectionInfo,
+    Fusion,
+    FusionQuery,
+    Modifier,
+    PointStruct,
+    Prefetch,
+    Record,
+    SparseVectorParams,
+)
 
 from llm_engineering.application.networks.embeddings import EmbeddingModelSingleton
+from llm_engineering.application.networks.sparse import document_sparse_vector, query_sparse_vector
 from llm_engineering.domain.exceptions import ImproperlyConfigured
 from llm_engineering.domain.types import DataCategory
 from llm_engineering.infrastructure.db.qdrant import connection
@@ -19,6 +29,13 @@ T = TypeVar("T", bound="VectorBaseDocument")
 
 # Collections already reported as missing, so the warning is logged once and not on every search.
 _missing_collections_warned: set[str] = set()
+
+# Hybrid search: each chunk stores two vectors. The dense one (meaning) keeps Qdrant's default
+# unnamed slot, so plain vector search works as before; the sparse one (BM25 keywords) is named.
+DENSE_VECTOR_NAME = ""
+SPARSE_VECTOR_NAME = "bm25"
+# Each half of a hybrid search returns this many candidates per final result before RRF merges them.
+HYBRID_PREFETCH_FACTOR = 4
 
 
 class VectorBaseDocument(BaseModel, Generic[T], ABC):
@@ -43,7 +60,10 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
             **payload,
         }
         if cls._has_class_attribute("embedding"):
-            attributes["embedding"] = point.vector or None
+            vector = point.vector
+            if isinstance(vector, dict):  # dense + sparse: keep only the dense embedding
+                vector = vector.get(DENSE_VECTOR_NAME)
+            attributes["embedding"] = vector or None
 
         return cls(**attributes)
 
@@ -57,6 +77,11 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
         vector = payload.pop("embedding", {})
         if vector and isinstance(vector, np.ndarray):
             vector = vector.tolist()
+        if vector and self.get_use_vector_index():
+            vector = {
+                DENSE_VECTOR_NAME: vector,
+                SPARSE_VECTOR_NAME: document_sparse_vector(payload.get("content", "")),
+            }
 
         return PointStruct(id=_id, vector=vector, payload=payload)
 
@@ -138,9 +163,11 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
         return documents, next_offset
 
     @classmethod
-    def search(cls: Type[T], query_vector: list, limit: int = 10, **kwargs) -> list[T]:
+    def search(cls: Type[T], query_vector: list, limit: int = 10, query_text: str | None = None, **kwargs) -> list[T]:
+        """Vector search; with `query_text`, hybrid search (vector + BM25 keywords, merged with RRF)."""
+
         try:
-            documents = cls._search(query_vector=query_vector, limit=limit, **kwargs)
+            documents = cls._search(query_vector=query_vector, limit=limit, query_text=query_text, **kwargs)
         except exceptions.UnexpectedResponse as e:
             collection_name = cls.get_collection_name()
             # A collection that was never filled (e.g. no posts were crawled) has nothing to return.
@@ -157,16 +184,40 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
         return documents
 
     @classmethod
-    def _search(cls: Type[T], query_vector: list, limit: int = 10, **kwargs) -> list[T]:
+    def _search(cls: Type[T], query_vector: list, limit: int = 10, query_text: str | None = None, **kwargs) -> list[T]:
         collection_name = cls.get_collection_name()
-        records = connection.search(
-            collection_name=collection_name,
-            query_vector=query_vector,
-            limit=limit,
-            with_payload=kwargs.pop("with_payload", True),
-            with_vectors=kwargs.pop("with_vectors", False),
-            **kwargs,
-        )
+        with_payload = kwargs.pop("with_payload", True)
+        with_vectors = kwargs.pop("with_vectors", False)
+
+        if query_text is None:
+            records = connection.search(
+                collection_name=collection_name,
+                query_vector=query_vector,
+                limit=limit,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                **kwargs,
+            )
+        else:
+            # Two searches inside one Qdrant request: vector (meaning) and BM25 (exact words).
+            # RRF merges the two ranked lists: each chunk scores 1 / (60 + rank) in each list.
+            query_filter = kwargs.pop("query_filter", None)
+            candidates = limit * HYBRID_PREFETCH_FACTOR
+            prefetch = [Prefetch(query=query_vector, filter=query_filter, limit=candidates)]
+            keywords = query_sparse_vector(query_text)
+            if keywords.indices:  # a question made only of stopwords has no keyword half
+                prefetch.append(Prefetch(query=keywords, using=SPARSE_VECTOR_NAME, filter=query_filter, limit=candidates))
+
+            records = connection.query_points(
+                collection_name=collection_name,
+                prefetch=prefetch,
+                query=FusionQuery(fusion=Fusion.RRF),
+                limit=limit,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                **kwargs,
+            ).points
+
         documents = [cls.from_record(record) for record in records]
 
         return documents
@@ -199,10 +250,17 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
     def _create_collection(cls, collection_name: str, use_vector_index: bool = True) -> bool:
         if use_vector_index is True:
             vectors_config = VectorParams(size=EmbeddingModelSingleton().embedding_size, distance=Distance.COSINE)
+            # Qdrant applies the rare-word weight (IDF) to the BM25 vectors at search time.
+            sparse_vectors_config = {SPARSE_VECTOR_NAME: SparseVectorParams(modifier=Modifier.IDF)}
         else:
             vectors_config = {}
+            sparse_vectors_config = None
 
-        return connection.create_collection(collection_name=collection_name, vectors_config=vectors_config)
+        return connection.create_collection(
+            collection_name=collection_name,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
 
     @classmethod
     def get_category(cls: Type[T]) -> DataCategory:
