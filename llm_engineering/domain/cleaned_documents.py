@@ -25,6 +25,7 @@ class CleanedPostDocument(CleanedDocument):
 
 class CleanedArticleDocument(CleanedDocument):
     link: str
+    title: str | None = None
 
     class Config:
         name = "cleaned_articles"
