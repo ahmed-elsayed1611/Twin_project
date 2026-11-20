@@ -14,6 +14,7 @@ LOGGED_SETTINGS = (
     "RERANKING_CROSS_ENCODER_MODEL_ID",
     "RAG_MODEL_DEVICE",
     "RAG_HYBRID_SEARCH",
+    "RAG_RERANK_MIN_SCORE",
 )
 
 
@@ -104,6 +105,8 @@ class Settings(BaseSettings):
     RAG_MODEL_DEVICE: str = "cpu"
     # Hybrid search: vector + BM25 keyword search merged with RRF. False = vector search only.
     RAG_HYBRID_SEARCH: bool = True
+    # Drop reranked chunks scoring below this (cross-encoder logits, above 0 is usually relevant). None = keep all.
+    RAG_RERANK_MIN_SCORE: float | None = None
 
     # LinkedIn Credentials
     LINKEDIN_USERNAME: str | None = None
