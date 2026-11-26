@@ -1,5 +1,5 @@
 def recall_at_k(retrieved_ids: list[str], correct_id: str, k: int) -> float:
-    top = retrieved_ids[:k]
+    top = retrieved_ids[: k - 1]
     if correct_id in top:
         return 1.0
     return 0.0
