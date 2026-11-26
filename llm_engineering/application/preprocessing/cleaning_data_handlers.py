@@ -59,10 +59,12 @@ class PostCleaningHandler(CleaningDataHandler):
 class ArticleCleaningHandler(CleaningDataHandler):
     def clean(self, data_model: ArticleDocument) -> CleanedArticleDocument:
         text_fields = [data_model.content.get(field) for field in ARTICLE_TEXT_FIELDS]
+        title = data_model.content.get("Title")
 
         return CleanedArticleDocument(
             id=data_model.id,
             content=_clean_and_join(text_fields),
+            title=clean_text(title) if title else None,
             platform=data_model.platform,
             link=data_model.link,
             author_id=data_model.author_id,

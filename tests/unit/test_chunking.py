@@ -62,3 +62,25 @@ def test_same_text_in_two_documents_gets_two_ids() -> None:  # 4.13
 
     assert [chunk.content for chunk in first] == [chunk.content for chunk in second]
     assert {chunk.id for chunk in first}.isdisjoint({chunk.id for chunk in second})
+
+
+def test_every_chunk_starts_with_the_title_once_and_fits_the_model() -> None:  # chunk headers
+    title = "Synced Vector DBs A Guide to Streaming Pipelines"
+    body = " ".join(f"Sentence number {i} explains how the vector database stays in sync." for i in range(200))
+    document = CleanedArticleDocument(
+        id=uuid.uuid4(),
+        content=f"{title}\n\n{body}",
+        title=title,
+        platform="example.com",
+        link="https://example.com/a",
+        author_id=uuid.uuid4(),
+        author_full_name="Test Author",
+    )
+    handler = ArticleChunkingHandler()
+
+    chunks = handler.chunk(document)
+
+    assert len(chunks) > 1
+    assert all(chunk.content.startswith(f"{title}\n\n") for chunk in chunks)
+    assert all(chunk.content.count(title) == 1 for chunk in chunks)
+    assert all(count_tokens(chunk.content) <= handler.metadata["max_length"] for chunk in chunks)

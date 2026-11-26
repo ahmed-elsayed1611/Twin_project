@@ -13,6 +13,7 @@ from llm_engineering.domain.embedded_chunks import (
     EmbeddedRepositoryChunk,
 )
 from llm_engineering.domain.queries import EmbeddedQuery, Query
+from llm_engineering.settings import settings
 
 from .query_expansion import QueryExpansion
 from .reranking import Reranker
@@ -99,6 +100,8 @@ class ContextRetriever:
                 query_vector=embedded_query.embedding,
                 limit=k,
                 query_filter=query_filter,
+                # With the question's text, the search is hybrid: vector + BM25 keywords, merged with RRF.
+                query_text=embedded_query.content if settings.RAG_HYBRID_SEARCH else None,
             )
 
         embedded_query: EmbeddedQuery = EmbeddingDispatcher.dispatch(query)
