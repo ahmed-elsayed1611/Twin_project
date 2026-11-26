@@ -206,7 +206,9 @@ class VectorBaseDocument(BaseModel, Generic[T], ABC):
             prefetch = [Prefetch(query=query_vector, filter=query_filter, limit=candidates)]
             keywords = query_sparse_vector(query_text)
             if keywords.indices:  # a question made only of stopwords has no keyword half
-                prefetch.append(Prefetch(query=keywords, using=SPARSE_VECTOR_NAME, filter=query_filter, limit=candidates))
+                prefetch.append(
+                    Prefetch(query=keywords, using=SPARSE_VECTOR_NAME, filter=query_filter, limit=candidates)
+                )
 
             records = connection.query_points(
                 collection_name=collection_name,
